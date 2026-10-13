@@ -1,77 +1,154 @@
 {
-  "pipeline_version": "1.4.0",
-  "flight_id": "Tarot450_20260408",
+  "pipeline_version": "1.5.0",
+  "flight_id": "Tarot450_20261009_102747",
   "platform": {
     "id": "TAROT_450",
     "label": "Tarot 450",
     "kind": "Quadcopter",
-    "description": "Tarot 450 quadcopter with an ArduPilot flight controller and a Raspberry Pi logger."
+    "description": "Tarot 450 quadcopter with an ArduPilot flight controller and a Raspberry Pi logger.",
+    "short": "Tarot450"
   },
-  "reader": "legacy_v1",
+  "reader": "session_v2",
   "source": {
-    "file": "raw_data/Tarot450_20260408/Flight2_Tarrot450_2026_04_08.csv",
-    "sha256": "3fd9bad02669b14e9995efe1df751dac6788038fcb4aaf82a75ecd9b60f6a56b",
-    "bytes": 1458462
+    "file": "raw_data/Tarot450/TAROT_450_20261009T162742Z.csv",
+    "sha256": "ce12ff902f5c1a6b20d0f397ecc51ba040425807cbc8c181fd19789d68f1f690",
+    "bytes": 7268839
   },
   "files": [
     "flight.parquet",
     "flight.csv",
+    "wind.parquet",
+    "wind.csv",
     "metadata.json"
   ],
   "header": {
-    "format": "early logger CSV (v1, no header block)",
-    "format_version": "1",
-    "gps_synced_from_row": 2
+    "format": "nasauli session log v2.1.0",
+    "format_version": "2.1.0",
+    "session_id": "TAROT_450_20261009T162742Z",
+    "platform": "TAROT_450",
+    "platform_label": "Tarot 450 (quad)",
+    "mode": "flight",
+    "start_utc": "2026-10-09T16:27:47.088Z",
+    "sample_rate_hz_target": "20.0",
+    "operator": "Grant",
+    "location": "Athletic Fields",
+    "factorial_condition": "",
+    "replicate": "",
+    "commanded_altitude_m": "25",
+    "commanded_speed_ms": "11, 14",
+    "adc_enabled": "False",
+    "temp_enabled": "True",
+    "mavlink_enabled": "True",
+    "time_base": "system UTC stepped to autopilot GPS time at start, then disciplined by chrony (ground-station peer)",
+    "hostname": "bumblebee",
+    "notes": "5500mah battery, 360g payload",
+    "chrony_reference_id": "00000000 ()",
+    "chrony_stratum": "0",
+    "chrony_last_offset_s": "+0.000000000 seconds",
+    "chrony_synchronised": "False",
+    "gps_time_available": "True",
+    "gps_utc_at_start": "2026-10-09T16:27:47.227Z",
+    "host_offset_from_gps_s": "0.3271",
+    "host_clock_stepped": "True",
+    "rtc_before_utc": "",
+    "rtc_action": "no RTC",
+    "time_base_trusted": "False",
+    "i2c_unavailable": "none",
+    "mavlink_connected": "True",
+    "mavlink_target_system": "1",
+    "mavlink_groups": "core,power,flight,quality"
   },
   "summary": {
-    "session_id": "Flight2_Tarrot450_2026_04_08",
+    "session_id": "TAROT_450_20261009T162742Z",
     "platform": "Tarot 450",
     "platform_id": "TAROT_450",
-    "start_utc": "2026-04-08T16:57:11.937000+00:00",
-    "end_utc": "2026-04-08T16:59:51.966000+00:00",
-    "start_local": "2026-04-08T10:57:11.937000-06:00",
-    "end_local": "2026-04-08T10:59:51.966000-06:00",
-    "duration_s": 160.0,
-    "samples": 2068,
-    "sample_rate_hz": 12.92,
+    "start_utc": "2026-10-09T16:27:47.110000+00:00",
+    "end_utc": "2026-10-09T16:33:04.510000+00:00",
+    "start_local": "2026-10-09T10:27:47.874256954-06:00",
+    "end_local": "2026-10-09T10:33:05.274256954-06:00",
+    "duration_s": 317.4,
+    "samples": 6349,
+    "sample_rate_hz": 20.0,
     "modes": [
       [
         0.0,
-        160.03,
+        0.2,
         "\u2014"
+      ],
+      [
+        0.2,
+        8.65,
+        "AUTO"
+      ],
+      [
+        8.65,
+        13.8,
+        "ALT_HOLD"
+      ],
+      [
+        13.8,
+        317.4,
+        "AUTO"
       ]
     ],
-    "takeoff_s": 22.6,
-    "landing_s": 150.3,
-    "airborne_s": 127.7,
+    "takeoff_s": 15.8,
+    "landing_s": 255.9,
+    "airborne_s": 240.1,
     "landed_in_log": true,
-    "max_alt_rel_m": 16.3,
-    "max_range_m": 356.0,
-    "mission_items": 0,
+    "max_alt_rel_m": 25.8,
+    "max_range_m": 301.0,
+    "cruise_alt_m": 25.0,
+    "cruise_speed_m_s": 10.8,
+    "cruise_current_a": 17.3,
+    "mission_items": 9,
     "rtl_s": null,
-    "batt_consumed_mah": 375.0,
-    "batt_v_start": 16.43,
-    "batt_v_end": 15.88,
+    "batt_consumed_mah": 1192.0,
+    "batt_v_start": 15.21,
+    "batt_v_end": 14.78,
     "batt_v_end_at_rest": true,
     "gps": {
       "basis": "airborne",
-      "sats_min": 29.0,
-      "hdop_max": null,
-      "fix": [],
-      "home_msl_m": 2160.18,
-      "home_msl_source": "EKF (approximate)"
+      "sats_min": 16.0,
+      "hdop_max": 1.62,
+      "fix": [
+        {
+          "type": 6,
+          "name": "RTK Fixed",
+          "accuracy": "cm-level vs. base",
+          "pct": 79.0
+        },
+        {
+          "type": 5,
+          "name": "RTK Float",
+          "accuracy": "~0.2\u20131 m vs. base",
+          "pct": 20.0
+        },
+        {
+          "type": 4,
+          "name": "DGPS/SBAS",
+          "accuracy": "~0.5\u20132 m",
+          "pct": 1.0
+        }
+      ],
+      "home_msl_m": 2164.84,
+      "home_msl_source": "RTK GPS before takeoff",
+      "baro_minus_rtk_m": {
+        "median": 1.12,
+        "p5": -2.21,
+        "p95": 4.84
+      }
     }
   },
   "checks": [
     {
       "level": "warn",
-      "title": "Real-time clock (RTC) not set",
-      "detail": "RTC_UTC reads 2026-04-01 14:44:00, but the flight is on 2026-04-08."
+      "title": "RTK fix not held for the whole flight",
+      "detail": "RTK Fixed (cm-level vs. base) for 79% of the airborne time; the rest was RTK Float 20% (~0.2\u20131 m vs. base); DGPS/SBAS 1% (~0.5\u20132 m). Positions in those stretches are less accurate; the GPS panel shows when."
     },
     {
-      "level": "info",
-      "title": "No wind data for this flight",
-      "detail": "No wind-drone log was recorded on this day."
+      "level": "warn",
+      "title": "Weak GPS in flight",
+      "detail": "Minimum 16 satellites, maximum HDOP 1.62 while airborne."
     },
     {
       "level": "info",
@@ -80,80 +157,110 @@
     },
     {
       "level": "info",
-      "title": "Log format note",
-      "detail": "Header unit labels for IMU acc/gyro/mag and RawGPS_vel are wrong; converted using the MAVLink units."
+      "title": "HB_Armed mixes heartbeats from several MAVLink components",
+      "detail": "The raw HB_Armed column flips 492 times. The cleaned armed column only uses autopilot heartbeats (base_mode bit 0 set) and changes 2 times. The logger should filter heartbeats to the autopilot's sysid/compid."
     },
     {
       "level": "info",
-      "title": "Log format note",
-      "detail": "Battery_* columns come from a sensor that was not connected; PM_* (power module) is used instead."
-    },
-    {
-      "level": "info",
-      "title": "Log format note",
-      "detail": "No heartbeat, flight mode, servo, vibration or EKF data in this log format."
+      "title": "Barometric altitude differs from RTK height",
+      "detail": "alt_rel_m (EKF, barometer-based) minus the RTK GPS height above takeoff: median +1.1 m, 5\u201395% range -2.2 to +4.8 m in flight. For precise height use gps_alt_m while the fix is RTK Fixed."
     }
   ],
   "home": {
-    "lat_deg": 39.018744,
-    "lon_deg": -104.8934947
+    "lat_deg": 39.0187535,
+    "lon_deg": -104.8934238
   },
-  "gps_clock_offset_s": null,
+  "gps_clock_offset_s": 0.7643,
   "missing_columns": [
-    "airspeed_m_s",
+    "roll_rate_deg_s",
+    "pitch_rate_deg_s",
+    "yaw_rate_deg_s",
     "ap_wind_dir_deg",
     "ap_wind_speed_m_s",
-    "ap_wind_speed_z_m_s",
-    "armed",
-    "baro_press_hpa",
-    "baro_temp_c",
-    "clip_0",
-    "clip_1",
-    "clip_2",
-    "ekf_compass_var",
-    "ekf_flags",
-    "ekf_pos_horiz_var",
-    "ekf_pos_vert_var",
-    "ekf_vel_var",
-    "flight_mode",
-    "gps_course_deg",
-    "gps_fix_type",
-    "gps_hdop",
-    "gps_vdop",
-    "mission_seq",
-    "motor1_us",
-    "motor2_us",
-    "motor3_us",
-    "motor4_us",
-    "throttle_pct",
-    "time_local",
-    "vib_x_m_s2",
-    "vib_y_m_s2",
-    "vib_z_m_s2",
-    "wp_dist_m"
+    "ap_wind_speed_z_m_s"
   ],
   "wind": {
-    "flight_start_gps_utc": "2026-04-08T16:57:11.937000+00:00",
-    "flight_end_gps_utc": "2026-04-08T16:59:51.966000+00:00",
+    "flight_start_gps_utc": "2026-10-09T16:27:47.874256954+00:00",
+    "flight_end_gps_utc": "2026-10-09T16:33:05.274256954+00:00",
     "margin_s": 5.0,
-    "rows": 0,
-    "coverage_pct": 0.0,
-    "sources": [],
+    "rows": 1637,
+    "coverage_pct": 100.0,
+    "sources": [
+      "wind_drone_20261009_100606"
+    ],
     "reader": "wind_ros2_csv",
     "logs_available": [
       {
         "name": "wind_drone_20260925_102813_csv",
+        "kind": "csv",
         "start_utc": "2026-09-25T16:28:15.725896202+00:00",
         "end_utc": "2026-09-25T16:58:18.928394923+00:00",
         "rows": 9017,
-        "bag_closed": false
+        "bag_closed": false,
+        "unique_rows": 9017
       },
       {
         "name": "wind_drone_20260929",
+        "kind": "csv",
         "start_utc": "2026-09-29T16:06:03.122489379+00:00",
         "end_utc": "2026-09-29T17:21:54.761608123+00:00",
         "rows": 22759,
-        "bag_closed": null
+        "bag_closed": null,
+        "unique_rows": 22759
+      },
+      {
+        "name": "wind_drone_20260929_100600",
+        "kind": "mcap",
+        "start_utc": "2026-09-29T16:06:03.122489379+00:00",
+        "end_utc": "2026-09-29T17:21:54.761608123+00:00",
+        "rows": 22759,
+        "bag_closed": true,
+        "unique_rows": 0
+      },
+      {
+        "name": "wind_drone_20260930_141446_csv",
+        "kind": "csv",
+        "start_utc": "2026-09-30T20:14:48.532804215+00:00",
+        "end_utc": "2026-09-30T20:17:20.135207457+00:00",
+        "rows": 759,
+        "bag_closed": true,
+        "unique_rows": 759
+      },
+      {
+        "name": "wind_drone_20261007_101012_csv",
+        "kind": "csv",
+        "start_utc": "2026-10-07T16:10:14.934408487+00:00",
+        "end_utc": "2026-10-07T16:52:24.131376534+00:00",
+        "rows": 12647,
+        "bag_closed": true,
+        "unique_rows": 12647
+      },
+      {
+        "name": "wind_drone_20261007_105259_csv",
+        "kind": "csv",
+        "start_utc": "2026-10-07T16:53:01.728972446+00:00",
+        "end_utc": "2026-10-07T17:18:05.915652242+00:00",
+        "rows": 7522,
+        "bag_closed": true,
+        "unique_rows": 7522
+      },
+      {
+        "name": "wind_drone_20261009_094601",
+        "kind": "mcap",
+        "start_utc": "2026-10-09T15:46:03.907068760+00:00",
+        "end_utc": "2026-10-09T16:04:45.351633318+00:00",
+        "rows": 5608,
+        "bag_closed": true,
+        "unique_rows": 5608
+      },
+      {
+        "name": "wind_drone_20261009_100606",
+        "kind": "mcap",
+        "start_utc": "2026-10-09T16:06:08.359087437+00:00",
+        "end_utc": "2026-10-09T16:45:12.550355651+00:00",
+        "rows": 11722,
+        "bag_closed": false,
+        "unique_rows": 11722
       }
     ]
   },
@@ -448,7 +555,40 @@
       "description": "Not used: autopilot wind estimate (not a measurement), vertical speed"
     }
   },
-  "wind_columns": null,
+  "wind_columns": {
+    "time_utc": {
+      "unit": "UTC",
+      "description": "Time the wind-drone computer received the message (ROS bag time)"
+    },
+    "sensor_stamp_utc": {
+      "unit": "UTC",
+      "description": "Timestamp in the message header, set by the sensor node"
+    },
+    "time_local": {
+      "unit": "America/Denver",
+      "description": "time_utc in Mountain Time (MST/MDT)"
+    },
+    "elapsed_s": {
+      "unit": "s",
+      "description": "Seconds on the matching flight's elapsed_s axis"
+    },
+    "wind_speed_m_s": {
+      "unit": "m/s",
+      "description": "Wind speed (vector.x)"
+    },
+    "wind_dir_deg": {
+      "unit": "deg",
+      "description": "Wind direction (vector.y)"
+    },
+    "wind_z": {
+      "unit": "-",
+      "description": "vector.z (unused by the sensor, always 0 so far)"
+    },
+    "temperature_c": {
+      "unit": "degC",
+      "description": "Wind sensor temperature"
+    }
+  },
   "hwas_columns": null,
   "notes": "Columns not listed under 'columns' are raw logger columns carried through unchanged."
 }

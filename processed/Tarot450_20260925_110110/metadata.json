@@ -1,15 +1,16 @@
 {
-  "pipeline_version": "1.4.0",
-  "flight_id": "Tarot450_20260925_170514Z",
+  "pipeline_version": "1.5.0",
+  "flight_id": "Tarot450_20260925_110110",
   "platform": {
     "id": "TAROT_450",
     "label": "Tarot 450",
     "kind": "Quadcopter",
-    "description": "Tarot 450 quadcopter with an ArduPilot flight controller and a Raspberry Pi logger."
+    "description": "Tarot 450 quadcopter with an ArduPilot flight controller and a Raspberry Pi logger.",
+    "short": "Tarot450"
   },
   "reader": "session_v2",
   "source": {
-    "file": "raw_data/Tarot450_20260925_170514Z/TAROT_450_20260925T165912Z.csv",
+    "file": "raw_data/Tarot450/TAROT_450_20260925T165912Z.csv",
     "sha256": "a4e541ce2aebd78b335c9624c09b7f6ac5aff6a3725bc65eb98f6f804caf81de",
     "bytes": 5813647
   },
@@ -193,17 +194,75 @@
     "logs_available": [
       {
         "name": "wind_drone_20260925_102813_csv",
+        "kind": "csv",
         "start_utc": "2026-09-25T16:28:15.725896202+00:00",
         "end_utc": "2026-09-25T16:58:18.928394923+00:00",
         "rows": 9017,
-        "bag_closed": false
+        "bag_closed": false,
+        "unique_rows": 9017
       },
       {
         "name": "wind_drone_20260929",
+        "kind": "csv",
         "start_utc": "2026-09-29T16:06:03.122489379+00:00",
         "end_utc": "2026-09-29T17:21:54.761608123+00:00",
         "rows": 22759,
-        "bag_closed": null
+        "bag_closed": null,
+        "unique_rows": 22759
+      },
+      {
+        "name": "wind_drone_20260929_100600",
+        "kind": "mcap",
+        "start_utc": "2026-09-29T16:06:03.122489379+00:00",
+        "end_utc": "2026-09-29T17:21:54.761608123+00:00",
+        "rows": 22759,
+        "bag_closed": true,
+        "unique_rows": 0
+      },
+      {
+        "name": "wind_drone_20260930_141446_csv",
+        "kind": "csv",
+        "start_utc": "2026-09-30T20:14:48.532804215+00:00",
+        "end_utc": "2026-09-30T20:17:20.135207457+00:00",
+        "rows": 759,
+        "bag_closed": true,
+        "unique_rows": 759
+      },
+      {
+        "name": "wind_drone_20261007_101012_csv",
+        "kind": "csv",
+        "start_utc": "2026-10-07T16:10:14.934408487+00:00",
+        "end_utc": "2026-10-07T16:52:24.131376534+00:00",
+        "rows": 12647,
+        "bag_closed": true,
+        "unique_rows": 12647
+      },
+      {
+        "name": "wind_drone_20261007_105259_csv",
+        "kind": "csv",
+        "start_utc": "2026-10-07T16:53:01.728972446+00:00",
+        "end_utc": "2026-10-07T17:18:05.915652242+00:00",
+        "rows": 7522,
+        "bag_closed": true,
+        "unique_rows": 7522
+      },
+      {
+        "name": "wind_drone_20261009_094601",
+        "kind": "mcap",
+        "start_utc": "2026-10-09T15:46:03.907068760+00:00",
+        "end_utc": "2026-10-09T16:04:45.351633318+00:00",
+        "rows": 5608,
+        "bag_closed": true,
+        "unique_rows": 5608
+      },
+      {
+        "name": "wind_drone_20261009_100606",
+        "kind": "mcap",
+        "start_utc": "2026-10-09T16:06:08.359087437+00:00",
+        "end_utc": "2026-10-09T16:45:12.550355651+00:00",
+        "rows": 11722,
+        "bag_closed": false,
+        "unique_rows": 11722
       }
     ]
   },
