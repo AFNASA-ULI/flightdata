@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from . import legacy_v1, session_v2, wind_ros2
+from . import hwas, legacy_v1, session_v2, wind_ros2
 
 FLIGHT_READERS = [session_v2, legacy_v1]
 
@@ -22,4 +22,4 @@ def reader_for(path: Path):
     return None
 
 
-__all__ = ["FLIGHT_READERS", "reader_for", "legacy_v1", "session_v2", "wind_ros2"]
+__all__ = ["FLIGHT_READERS", "reader_for", "hwas", "legacy_v1", "session_v2", "wind_ros2"]

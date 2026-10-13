@@ -21,12 +21,13 @@ import pandas as pd
 import yaml
 
 from . import __version__
-from .clean import RAW, WIND_DIR, find_flight_dirs, load_wind_logs
+from .clean import RAW, WIND_DIR, find_flight_dirs, load_hwas_logs, load_wind_logs
 from .pipeline import PROCESSED, load_all_metadata
 from .localtime import LOCAL_LABEL, fmt
 from .platforms import PLATFORMS
 from .report import render, stat_tiles, title_for
-from .schema import FLIGHT_COLUMNS, RTK_BASE, WIND_COLUMNS
+from .readers import hwas as hwas_reader
+from .schema import FLIGHT_COLUMNS, HWAS_COLUMNS, RTK_BASE, WIND_COLUMNS
 
 REPO = "https://github.com/AFNASA-ULI/flightdata"
 BRANCH = "main"
@@ -143,9 +144,10 @@ class Book:
         d = m["_dir"]
         pre = f"{m['_prefix']}_" if m["_prefix"] else ""
         wind = pd.read_parquet(d / f"{pre}wind.parquet") if (d / f"{pre}wind.parquet").exists() else None
+        hw = pd.read_parquet(d / f"{pre}hwas.parquet") if (d / f"{pre}hwas.parquet").exists() else None
         tiles = "\n".join(
             f'<div class="stat"><div class="k">{html.escape(k)}</div><div class="v">{html.escape(v)}</div>'
-            f'<div class="s">{html.escape(s)}</div></div>' for k, v, s in stat_tiles(m, wind))
+            f'<div class="s">{html.escape(s)}</div></div>' for k, v, s in stat_tiles(m, wind, hw))
         sm = m["summary"]
         rel = f"{PROCESSED}/{m['flight_id']}/"
         text = [
@@ -174,6 +176,8 @@ class Book:
                  "| File | Contents | Size |", "|---|---|---:|"]
         labels = {"flight.parquet": "Cleaned flight data (Parquet)", "flight.csv": "Cleaned flight data (CSV)",
                   "wind.parquet": "Wind data for this flight (Parquet)", "wind.csv": "Wind data for this flight (CSV)",
+                  "hwas.parquet": "HWAS weather station during this flight (Parquet)",
+                  "hwas.csv": "HWAS weather station during this flight (CSV)",
                   "metadata.json": "Summary, findings, column units, provenance"}
         for f in m["files"]:
             label = labels.get(f.removeprefix(pre), f)
@@ -212,6 +216,10 @@ class Book:
         text += ["## Wind drone", "", f"{len(logs)} log(s); see [wind drone](wind_drone.md).", ""]
         sections.append({"file": "data/raw/wind_drone"})
         self.wind_page(logs)
+        _, hlogs = load_hwas_logs(self.root)
+        text += ["## HWAS weather station", "", f"{len(hlogs)} file(s); see [HWAS weather station](hwas.md).", ""]
+        sections.append({"file": "data/raw/hwas"})
+        self.hwas_page(hlogs)
         self.write("data/raw/index.md", "\n".join(text))
         return {"file": "data/raw/index", "sections": sections}
 
@@ -244,6 +252,22 @@ class Book:
         text.append(":::")
         self.write(f"data/raw/{page_id(m)}.md", "\n".join(text))
 
+    def hwas_page(self, logs) -> None:
+        d = f"{RAW}/{hwas_reader.DIR}"
+        text = ["# HWAS weather station", "",
+                "Wind speed, direction and gusts, air temperature, humidity and pressure from the USAFA mesonet's "
+                f"High Wind Alert System (HWAS) station, one reading every 30 s ([{d}]({tree(d)})). The station reports "
+                "in knots and °F (the export converts to SI), its timestamps are Mountain Time, and its pressure is "
+                "sea-level-adjusted. The pipeline keeps the readings from a minute before to a minute after each "
+                "flight.", "",
+                f"| File | Start ({LOCAL_LABEL}) | End ({LOCAL_LABEL}) | Rows | Flights covered |", "|---|---|---|---:|---|"]
+        for lg in logs:
+            covered = [m for m in self.metas if m.get("hwas") and lg["name"] in m["hwas"].get("sources", [])]
+            links = ", ".join(f"[{when(m)}](../../experiments/{m['platform']['id']}/{page_id(m)}.md)" for m in covered)
+            text.append(f"| [{lg['name']}]({blob(d + '/' + lg['name'])}) | {fmt(lg['start_utc'], '%Y-%m-%d %H:%M %Z')} | "
+                        f"{fmt(lg['end_utc'], '%H:%M %Z')} | {lg['rows']} | {links or 'none'} |")
+        self.write("data/raw/hwas.md", "\n".join(text))
+
     def wind_page(self, logs) -> None:
         text = ["# Wind drone", "",
                 "Wind speed, direction and temperature from the wind drone's sensor, recorded as ROS 2 bags "
@@ -268,6 +292,7 @@ class Book:
                 "| File | Contents |", "|---|---|",
                 "| `flight.parquet`, `flight.csv` | One row per logger sample: the standard columns below, then every other raw column under its original name |",
                 "| `wind.parquet`, `wind.csv` | Wind-drone data for the flight's time window (only when a wind log overlaps) |",
+                "| `hwas.parquet`, `hwas.csv` | HWAS weather-station readings around the flight (only when a station export covers it) |",
                 "| `metadata.json` | Log header, summary numbers, data-quality findings, column units, source file and its SHA-256, pipeline version |",
                 "",
                 "`time_utc` is the logger's clock; `time_gps_utc` is that corrected to the autopilot's GPS time, and "
@@ -299,6 +324,14 @@ class Book:
         text += ["", "## Wind columns", "", "| Column | Unit | Description |", "|---|---|---|"]
         text += [f"| `{k}` | {esc(u)} | {esc(d)} |" for k, (u, d) in WIND_COLUMNS.items()]
         text += ["| `source` | - | Wind log the row came from |"]
+        text += ["", "## HWAS weather-station columns", "",
+                 "`hwas.parquet`/`hwas.csv`: the HWAS station's 30-second readings from a minute before to a minute "
+                 "after the flight.", "", "| Column | Unit | Description |", "|---|---|---|"]
+        text += [f"| `{k}` | {esc(u)} | {esc(d)} |" for k, (u, d) in HWAS_COLUMNS.items()]
+        text += ["", "## Not used", "",
+                 "The autopilot does not measure wind. Its `WND_*` messages (`ap_wind_*` columns) are an estimate that "
+                 "stays at 0 / −180 in these logs, so they are kept only for completeness and are not used anywhere. "
+                 "Wind comes from the wind drone and the HWAS station."]
         self.write("data/processed.md", "\n".join(text))
 
     def download_page(self, zips: dict[str, int]) -> None:
@@ -437,10 +470,12 @@ def build_site(root: Path, out: Path, work: Path | None = None, run_sphinx: bool
         flight = pd.read_parquet(m["_dir"] / f"{pre}flight.parquet")
         wp = m["_dir"] / f"{pre}wind.parquet"
         wind = pd.read_parquet(wp) if wp.exists() else None
+        hp = m["_dir"] / f"{pre}hwas.parquet"
+        hw = pd.read_parquet(hp) if hp.exists() else None
         rel = f"{PROCESSED}/{m['flight_id']}/"
         downloads = {f: raw_url(rel + f) for f in m["files"]}
         back = f"../experiments/{m['platform']['id']}/{page_id(m)}.html"
-        (html_dir / "reports" / f"{page_id(m)}.html").write_text(render(m, flight, wind, downloads, back))
+        (html_dir / "reports" / f"{page_id(m)}.html").write_text(render(m, flight, wind, downloads, back, hw))
     shutil.copytree(zip_dir, html_dir / "downloads", dirs_exist_ok=True)
     (html_dir / ".nojekyll").write_text("")
     if out.exists():

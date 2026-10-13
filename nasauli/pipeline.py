@@ -11,7 +11,7 @@ import pandas as pd
 from . import __version__
 from .checks import run_checks, summarize
 from .clean import RAW, Session, find_flight_dirs, load_session, raw_logs
-from .schema import FLIGHT_COLUMNS, WIND_COLUMNS
+from .schema import FLIGHT_COLUMNS, HWAS_COLUMNS, WIND_COLUMNS
 
 PROCESSED = "processed"
 
@@ -45,7 +45,7 @@ def output_dir(root: Path, flight_id: str) -> Path:
 def output_names(prefix: str) -> dict[str, str]:
     """File names inside processed/<flight>/. ``prefix`` is "" when the folder holds one session."""
     p = f"{prefix}_" if prefix else ""
-    return {"flight": f"{p}flight", "wind": f"{p}wind", "metadata": f"{p}metadata.json"}
+    return {"flight": f"{p}flight", "wind": f"{p}wind", "hwas": f"{p}hwas", "metadata": f"{p}metadata.json"}
 
 
 def process_session(s: Session, root: Path, prefix: str = "") -> dict:
@@ -57,13 +57,14 @@ def process_session(s: Session, root: Path, prefix: str = "") -> dict:
 
     _write_table(s.flight, out / names["flight"])
     files = [f"{names['flight']}.parquet", f"{names['flight']}.csv"]
-    wind_path = out / names["wind"]
-    if s.wind is not None and len(s.wind):
-        _write_table(s.wind, wind_path)
-        files += [f"{names['wind']}.parquet", f"{names['wind']}.csv"]
-    else:
-        for ext in (".parquet", ".csv"):
-            wind_path.with_suffix(ext).unlink(missing_ok=True)
+    for key, table in (("wind", s.wind), ("hwas", s.hwas)):
+        path = out / names[key]
+        if table is not None and len(table):
+            _write_table(table, path)
+            files += [f"{names[key]}.parquet", f"{names[key]}.csv"]
+        else:
+            for ext in (".parquet", ".csv"):
+                path.with_suffix(ext).unlink(missing_ok=True)
     files.append(names["metadata"])
 
     header = {k: v for k, v in s.info["header"].items() if not k.startswith("_")}
@@ -82,9 +83,12 @@ def process_session(s: Session, root: Path, prefix: str = "") -> dict:
         "gps_clock_offset_s": s.info["gps_clock_offset_s"],
         "missing_columns": s.info["missing_columns"],
         "wind": s.wind_info or None,
+        "hwas": s.hwas_info or None,
         "columns": {k: {"unit": u, "description": d} for k, (u, d) in FLIGHT_COLUMNS.items()},
         "wind_columns": {k: {"unit": u, "description": d} for k, (u, d) in WIND_COLUMNS.items()}
         if s.wind is not None and len(s.wind) else None,
+        "hwas_columns": {k: {"unit": u, "description": d} for k, (u, d) in HWAS_COLUMNS.items()}
+        if s.hwas is not None and len(s.hwas) else None,
         "notes": "Columns not listed under 'columns' are raw logger columns carried through unchanged.",
     }
     (out / names["metadata"]).write_text(json.dumps(meta, indent=2, default=str) + "\n")

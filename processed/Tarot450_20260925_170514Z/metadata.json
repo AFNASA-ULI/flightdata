@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.3.0",
+  "pipeline_version": "1.4.0",
   "flight_id": "Tarot450_20260925_170514Z",
   "platform": {
     "id": "TAROT_450",
@@ -142,11 +142,6 @@
     },
     {
       "level": "warn",
-      "title": "Logger clock not synchronized",
-      "detail": "The header says chrony_synchronised: False; the host clock is 2.07 s behind the autopilot's GPS time. time_gps_utc corrects for this."
-    },
-    {
-      "level": "warn",
       "title": "Real-time clock (RTC) not set",
       "detail": "RTC_UTC reads 2026-04-01 14:44:00, but the flight is on 2026-09-25."
     },
@@ -157,6 +152,11 @@
     },
     {
       "level": "info",
+      "title": "No HWAS weather-station data",
+      "detail": "No HWAS export in raw_data/hwas_data/ covers this flight."
+    },
+    {
+      "level": "info",
       "title": "HB_Armed mixes heartbeats from several MAVLink components",
       "detail": "The raw HB_Armed column flips 420 times. The cleaned armed column only uses autopilot heartbeats (base_mode bit 0 set) and changes 2 times. The logger should filter heartbeats to the autopilot's sysid/compid."
     },
@@ -164,11 +164,6 @@
       "level": "info",
       "title": "Empty columns",
       "detail": "23 column(s) have no data: BAT_Cell2_V, BAT_Cell3_V, BAT_Cell4_V, BAT_Temp_cdegC, BAT_TimeRemaining_s, ESC1_RPM, ESC2_RPM, ESC3_RPM, ESC4_RPM, ESC1_V, ESC2_V, ESC3_V, ESC4_V, ESC1_A, ESC2_A, ESC3_A, ESC4_A, ESC1_degC, ESC2_degC, ESC3_degC, ESC4_degC, ESC_rx_UTC, ESC_Age_ms"
-    },
-    {
-      "level": "info",
-      "title": "Autopilot wind estimate is constant",
-      "detail": "WND_* stays at speed 0.0, direction -180.0 for the whole log."
     },
     {
       "level": "info",
@@ -202,9 +197,17 @@
         "end_utc": "2026-09-25T16:58:18.928394923+00:00",
         "rows": 9017,
         "bag_closed": false
+      },
+      {
+        "name": "wind_drone_20260929",
+        "start_utc": "2026-09-29T16:06:03.122489379+00:00",
+        "end_utc": "2026-09-29T17:21:54.761608123+00:00",
+        "rows": 22759,
+        "bag_closed": null
       }
     ]
   },
+  "hwas": null,
   "columns": {
     "time_utc": {
       "unit": "UTC",
@@ -412,7 +415,7 @@
     },
     "batt_temp_c": {
       "unit": "degC",
-      "description": "Battery temperature (logger's own sensor)"
+      "description": "Battery temperature (logger's own sensor on the battery)"
     },
     "motor1_us": {
       "unit": "us",
@@ -484,17 +487,18 @@
     },
     "ap_wind_dir_deg": {
       "unit": "deg",
-      "description": "Autopilot wind estimate, direction"
+      "description": "Not used: autopilot wind estimate (not a measurement), direction"
     },
     "ap_wind_speed_m_s": {
       "unit": "m/s",
-      "description": "Autopilot wind estimate, speed"
+      "description": "Not used: autopilot wind estimate (not a measurement), speed"
     },
     "ap_wind_speed_z_m_s": {
       "unit": "m/s",
-      "description": "Autopilot wind estimate, vertical speed"
+      "description": "Not used: autopilot wind estimate (not a measurement), vertical speed"
     }
   },
   "wind_columns": null,
+  "hwas_columns": null,
   "notes": "Columns not listed under 'columns' are raw logger columns carried through unchanged."
 }

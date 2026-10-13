@@ -7,6 +7,7 @@
    (opening and saving it in Excel changes it).
 2. Copy any new wind-drone logs into `raw_data/wind_drone/`: the ROS 2 bag folder and its `_csv` export.
    They are matched to flights by time, so one wind log can cover several flights.
+   HWAS weather-station exports (`hwas_wx_data_<date>_<time>.csv`) go in `raw_data/hwas_data/`.
 3. Commit and push to `main`.
 
 The GitHub Action then processes every flight, commits the results to `processed/`, and rebuilds this

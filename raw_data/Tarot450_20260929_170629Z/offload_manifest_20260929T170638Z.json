@@ -1,0 +1,20 @@
+{
+  "downloaded_utc": "2026-09-29T17:06:29.855679+00:00",
+  "source_host": "192.168.50.1",
+  "source_dir": "~/cubelink/pizero2/logs",
+  "files": [
+    {
+      "name": "TAROT_450_20260929T164305Z.csv",
+      "remote_path": "/home/pi/cubelink/pizero2/logs/TAROT_450_20260929T164305Z.csv",
+      "local_path": "/home/robie/Documents/NasaULI-Flight-Data/20260929_170629Z/TAROT_450_20260929T164305Z.csv",
+      "remote_size": 8922241,
+      "local_size": 8922241,
+      "size_match": true,
+      "remote_sha256": "36a830a99a4bc668b2e1a1922dafc5efb8093a85e434a80e7ba59bb3dcf2fd5f",
+      "local_sha256": "36a830a99a4bc668b2e1a1922dafc5efb8093a85e434a80e7ba59bb3dcf2fd5f",
+      "checksum_match": true
+    }
+  ],
+  "failures": [],
+  "verified": true
+}

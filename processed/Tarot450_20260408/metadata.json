@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.3.0",
+  "pipeline_version": "1.4.0",
   "flight_id": "Tarot450_20260408",
   "platform": {
     "id": "TAROT_450",
@@ -75,6 +75,11 @@
     },
     {
       "level": "info",
+      "title": "No HWAS weather-station data",
+      "detail": "No HWAS export in raw_data/hwas_data/ covers this flight."
+    },
+    {
+      "level": "info",
       "title": "Log format note",
       "detail": "Header unit labels for IMU acc/gyro/mag and RawGPS_vel are wrong; converted using the MAVLink units."
     },
@@ -142,9 +147,17 @@
         "end_utc": "2026-09-25T16:58:18.928394923+00:00",
         "rows": 9017,
         "bag_closed": false
+      },
+      {
+        "name": "wind_drone_20260929",
+        "start_utc": "2026-09-29T16:06:03.122489379+00:00",
+        "end_utc": "2026-09-29T17:21:54.761608123+00:00",
+        "rows": 22759,
+        "bag_closed": null
       }
     ]
   },
+  "hwas": null,
   "columns": {
     "time_utc": {
       "unit": "UTC",
@@ -352,7 +365,7 @@
     },
     "batt_temp_c": {
       "unit": "degC",
-      "description": "Battery temperature (logger's own sensor)"
+      "description": "Battery temperature (logger's own sensor on the battery)"
     },
     "motor1_us": {
       "unit": "us",
@@ -424,17 +437,18 @@
     },
     "ap_wind_dir_deg": {
       "unit": "deg",
-      "description": "Autopilot wind estimate, direction"
+      "description": "Not used: autopilot wind estimate (not a measurement), direction"
     },
     "ap_wind_speed_m_s": {
       "unit": "m/s",
-      "description": "Autopilot wind estimate, speed"
+      "description": "Not used: autopilot wind estimate (not a measurement), speed"
     },
     "ap_wind_speed_z_m_s": {
       "unit": "m/s",
-      "description": "Autopilot wind estimate, vertical speed"
+      "description": "Not used: autopilot wind estimate (not a measurement), vertical speed"
     }
   },
   "wind_columns": null,
+  "hwas_columns": null,
   "notes": "Columns not listed under 'columns' are raw logger columns carried through unchanged."
 }

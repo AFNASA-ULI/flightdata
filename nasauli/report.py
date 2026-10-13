@@ -30,7 +30,7 @@ def _fmt(x, unit="", nd=1):
     return f"{x:,.{nd}f}{unit}"
 
 
-def plot_data(df: pd.DataFrame, wind: pd.DataFrame | None) -> dict:
+def plot_data(df: pd.DataFrame, wind: pd.DataFrame | None, hwas: pd.DataFrame | None = None) -> dict:
     rate = (len(df) - 1) / max(df["elapsed_s"].iloc[-1] - df["elapsed_s"].iloc[0], 1e-9)
     step = max(1, round(rate / MAX_PLOT_HZ))
     d = df.iloc[::step]
@@ -49,6 +49,7 @@ def plot_data(df: pd.DataFrame, wind: pd.DataFrame | None) -> dict:
         "epv": _arr(d["ekf_pos_vert_var"], 3), "ec": _arr(d["ekf_compass_var"], 3),
         "sats": _arr(d["gps_sats"], 0), "hdop": _arr(d["gps_hdop"], 2), "fixt": _arr(d["gps_fix_type"], 0),
         "mode": [m if isinstance(m, str) else "—" for m in d["flight_mode"].astype(object)],
+        "btemp": _arr(d["batt_temp_c"], 2),
     }
     w = None
     if wind is not None and len(wind):
@@ -57,7 +58,15 @@ def plot_data(df: pd.DataFrame, wind: pd.DataFrame | None) -> dict:
              "mean_spd": round(float(wind["wind_speed_m_s"].mean()), 1),
              "mean_from": round(circmean(wind["wind_dir_deg"])),
              "mean_from_name": compass(circmean(wind["wind_dir_deg"]))}
-    return {"D": data, "W": w}
+    h = None
+    if hwas is not None and len(hwas):
+        h = {"t": _arr(hwas["elapsed_s"], 1), "spd": _arr(hwas["wind_speed_m_s"], 2),
+             "gust": _arr(hwas["gust_m_s"].where(hwas["gust_m_s"] > 0), 2), "dir": _arr(hwas["wind_dir_deg"], 0),
+             "temp": _arr(hwas["temperature_c"], 2), "rh": _arr(hwas["humidity_pct"], 0),
+             "mean_spd": round(float(hwas["wind_speed_m_s"].mean()), 1),
+             "mean_from": round(circmean(hwas["wind_dir_deg"])),
+             "mean_from_name": compass(circmean(hwas["wind_dir_deg"]))}
+    return {"D": data, "W": w, "H": h}
 
 
 def compass(deg: float) -> str:
@@ -70,7 +79,8 @@ def circmean(deg: pd.Series) -> float:
     return float(np.degrees(np.arctan2(np.sin(r).mean(), np.cos(r).mean())) % 360)
 
 
-def stat_tiles(meta: dict, wind: pd.DataFrame | None) -> list[tuple[str, str, str]]:
+def stat_tiles(meta: dict, wind: pd.DataFrame | None,
+               hwas: pd.DataFrame | None = None) -> list[tuple[str, str, str]]:
     """(label, value, detail) summary tiles, shared by the report and the website's flight pages."""
     sm = meta["summary"]
     tiles = []
@@ -110,10 +120,18 @@ def stat_tiles(meta: dict, wind: pd.DataFrame | None) -> list[tuple[str, str, st
     elif g.get("sats_min") is not None:
         tiles.append(("GPS", "fix type not logged", f"≥{g['sats_min']:.0f} satellites"))
     if wind is not None and len(wind):
-        tiles.append(("Wind (sensor)", f"{wind['wind_speed_m_s'].mean():.1f} m/s mean",
-                      f"max {wind['wind_speed_m_s'].max():.1f} m/s, from ≈{circmean(wind['wind_dir_deg']):.0f}°"))
+        d = circmean(wind["wind_dir_deg"])
+        tiles.append(("Wind (wind drone)", f"{wind['wind_speed_m_s'].mean():.1f} m/s mean",
+                      f"max {wind['wind_speed_m_s'].max():.1f} m/s, from ≈{d:.0f}° ({compass(d)})"))
     elif meta.get("wind"):
-        tiles.append(("Wind (sensor)", "none", "no wind log covers this flight"))
+        tiles.append(("Wind (wind drone)", "none", "no wind-drone log covers this flight"))
+    if hwas is not None and len(hwas):
+        d = circmean(hwas["wind_dir_deg"])
+        gust = hwas["gust_m_s"].max()
+        tiles.append(("Wind (HWAS)", f"{hwas['wind_speed_m_s'].mean():.1f} m/s mean",
+                      (f"gusts to {gust:.1f} m/s, " if gust > 0 else "") + f"from ≈{d:.0f}° ({compass(d)})"))
+        tiles.append(("Air (HWAS)", f"{hwas['temperature_c'].mean():.1f} °C",
+                      f"{hwas['humidity_pct'].mean():.0f}% humidity"))
     return tiles
 
 
@@ -148,7 +166,7 @@ def title_for(meta: dict) -> str:
 
 
 def render(meta: dict, flight: pd.DataFrame, wind: pd.DataFrame | None,
-           downloads: dict[str, str], back_href: str = "../index.html") -> str:
+           downloads: dict[str, str], back_href: str = "../index.html", hwas: pd.DataFrame | None = None) -> str:
     sm = meta["summary"]
     start = to_local(sm["start_utc"])
     end = to_local(sm["end_utc"])
@@ -162,19 +180,20 @@ def render(meta: dict, flight: pd.DataFrame, wind: pd.DataFrame | None,
               f"({html.escape(meta['header'].get('format', ''))}) by the nasauli pipeline "
               f"v{meta['pipeline_version']}, reader <code>{meta['reader']}</code>. Time axis is "
               f"<code>elapsed_s</code>; hover times are GPS-corrected Mountain Time.")
-    wind_section = ""
-    if wind is not None and len(wind):
-        wind_section = ('<section data-plot="p-wind"><h2>Wind sensor</h2><p class="cap">Wind drone, speed (left axis) '
-                        'and direction (right axis, dots). Trimmed to this flight on GPS time.</p>'
-                        '<div id="p-wind" class="plot"></div></section>')
+    wind_section = (
+        '<section data-plot="p-wind"><h2>Wind</h2><p class="cap">Speed (left axis): wind drone (line) and HWAS weather '
+        'station (steps, one reading every 30 s; gusts dotted). Direction the wind comes from (right axis, dots). '
+        'Matched to this flight on GPS time.</p><div id="p-wind" class="plot"></div></section>'
+        '<section data-plot="p-temp"><h2>Temperatures</h2><p class="cap">Air (HWAS weather station), wind-drone sensor, '
+        'and battery (Tarot telemetry), °C</p><div id="p-temp" class="plot"></div></section>')
     out = TEMPLATE
     for k, v in {
         "__TITLE__": html.escape(title_for(meta)), "__H1__": html.escape(f"{meta['platform']['label']} flight"),
         "__BACK__": html.escape(back_href),
-        "__SUB__": sub, "__STATS__": _stats_html(stat_tiles(meta, wind)), "__NOTES__": _notes_html(meta["checks"]),
+        "__SUB__": sub, "__STATS__": _stats_html(stat_tiles(meta, wind, hwas)), "__NOTES__": _notes_html(meta["checks"]),
         "__WIND__": wind_section, "__DOWNLOADS__": dl, "__FOOTER__": footer,
         "__MODES__": json.dumps(sm["modes"], separators=(",", ":")),
-        "__DATA__": json.dumps(_with_home(plot_data(flight, wind), sm), separators=(",", ":")),
+        "__DATA__": json.dumps(_with_home(plot_data(flight, wind, hwas), sm), separators=(",", ":")),
     }.items():
         out = out.replace(k, v)
     return out
@@ -262,7 +281,7 @@ __WIND__
 </main>
 <script>
 const MODES=__MODES__;
-const P=__DATA__;const D=P.D,W=P.W;
+const P=__DATA__;const D=P.D,W=P.W,H=P.H;
 // Embedded in the website: hide the page header, follow the site's theme, size the iframe to the content.
 const EMBED=window.self!==window.top;
 if(EMBED){document.documentElement.classList.add('embed');
@@ -274,7 +293,8 @@ if(EMBED){document.documentElement.classList.add('embed');
 // Drop panels whose data this log format doesn't have.
 const has=(...ks)=>ks.some(k=>(D[k]||[]).some(v=>v!==null&&v!==0));
 const AVAIL={'p-alt':has('alt'),'p-gs':has('gs','vz'),'p-att':has('roll','pitch'),'p-bat':has('V','I'),'p-mot':has('m1','m2','m3','m4'),
-  'p-vib':has('vx','vy','vzb'),'p-gps':has('fixt'),'p-ekf':has('ev','eph','epv','ec'),'p-wind':!!W};
+  'p-vib':has('vx','vy','vzb'),'p-gps':has('fixt'),'p-ekf':has('ev','eph','epv','ec'),'p-wind':!!(W||H),
+  'p-temp':has('btemp')||!!(W&&W.temp.some(v=>v!==null))||!!(H&&H.temp.some(v=>v!==null))};
 const FIXN={0:'No GPS',1:'No fix',2:'2D',3:'3D',4:'DGPS',5:'RTK Float',6:'RTK Fixed',7:'Static',8:'PPP'};
 document.querySelectorAll('section[data-plot]').forEach(s=>{if(!AVAIL[s.dataset.plot])s.remove();});
 const TS=Object.keys(AVAIL).filter(k=>AVAIL[k]);
@@ -296,15 +316,17 @@ const hmax=Math.max(5,...D.alt.filter(v=>v!==null));
 let xr=null;
 // Mean wind as an arrow in the ground track's top-left corner, pointing downwind (direction is "from").
 function windArrow(){
-  if(!W||W.mean_spd==null)return [];
-  const to=(W.mean_from+180)*Math.PI/180,len=32,col=css('--ink');
+  const S=(W&&W.mean_spd!=null)?W:(H&&H.mean_spd!=null?H:null);
+  if(!S)return [];
+  const src=S===W?'wind drone':'HWAS station';
+  const to=(S.mean_from+180)*Math.PI/180,len=32,col=css('--ink');
   // Sits in the top margin, left of the plot: arrow (centered on a point 20 px in, 22 px up) then the label.
   const cx=20,cy=22;
   return [{xref:'paper',yref:'paper',x:0,y:1,xshift:cx+len/2*Math.sin(to),yshift:cy+len/2*Math.cos(to),
       ax:-len*Math.sin(to),ay:len*Math.cos(to),axref:'pixel',ayref:'pixel',
       showarrow:true,arrowhead:2,arrowsize:1.2,arrowwidth:2.5,arrowcolor:col,text:''},
     {xref:'paper',yref:'paper',x:0,y:1,xshift:44,yshift:cy,xanchor:'left',yanchor:'middle',showarrow:false,
-      text:`<b>Mean wind ${W.mean_spd.toFixed(1)} m/s</b> from ${W.mean_from}° (${W.mean_from_name})`,font:{size:12,color:col}}];
+      text:`<b>Mean wind ${S.mean_spd.toFixed(1)} m/s</b> from ${S.mean_from}° (${S.mean_from_name}) · ${src}`,font:{size:12,color:col}}];
 }
 const PR=(...a)=>Plotly.react(...a);
 function draw(){
@@ -344,11 +366,11 @@ function draw(){
   const B=(ex)=>{const b=base(ex);b.xaxis=Object.assign(b.xaxis,X);return b;};
   // One line; the right axis is the same height above mean sea level (offset by the home elevation).
   const av=D.alt.filter(v=>v!==null),alo=Math.min(0,...av),ahi=Math.max(1,...av),pad=(ahi-alo)*0.06,yr=[alo-pad,ahi+pad];
-  const H=D.home_msl,altTr=[L(D.alt,'above takeoff',c1,{customdata:D.alt.map(v=>v===null||H===null?null:(v+H).toFixed(1)),
-      hovertemplate:H===null?'%{y:.1f} m':'%{y:.1f} m above takeoff<br>%{customdata} m MSL<extra></extra>'})];
-  if(H!==null)altTr.push({x:[D.t[0]],y:[yr[0]+H],yaxis:'y2',type:'scatter',mode:'markers',marker:{opacity:0},showlegend:false,hoverinfo:'skip'});
+  const HM=D.home_msl,altTr=[L(D.alt,'above takeoff',c1,{customdata:D.alt.map(v=>v===null||HM===null?null:(v+HM).toFixed(1)),
+      hovertemplate:HM===null?'%{y:.1f} m':'%{y:.1f} m above takeoff<br>%{customdata} m MSL<extra></extra>'})];
+  if(HM!==null)altTr.push({x:[D.t[0]],y:[yr[0]+HM],yaxis:'y2',type:'scatter',mode:'markers',marker:{opacity:0},showlegend:false,hoverinfo:'skip'});
   react('p-alt',altTr,B({yaxis:axis({title:{text:'m above takeoff'},range:yr}),
-    yaxis2:H===null?undefined:axis({title:{text:'m MSL'},overlaying:'y',side:'right',showgrid:false,range:[yr[0]+H,yr[1]+H],tickformat:'.0f'}),showlegend:false}),cfg);
+    yaxis2:HM===null?undefined:axis({title:{text:'m MSL'},overlaying:'y',side:'right',showgrid:false,range:[yr[0]+HM,yr[1]+HM],tickformat:'.0f'}),showlegend:false}),cfg);
   react('p-gs',[L(D.gs,'groundspeed',c1),L(D.vz,'climb rate',c2)],B({yaxis:axis({title:{text:'m/s'}})}),cfg);
   react('p-att',[L(D.roll,'roll',c1),L(D.pitch,'pitch',c2)],B({yaxis:axis({title:{text:'deg'}})}),cfg);
   react('p-bat',[L(D.V,'voltage',c1),L(D.I,'current',c4,{yaxis:'y2',line:{color:c4,width:1}})],
@@ -361,9 +383,19 @@ function draw(){
        yaxis2:axis({title:{text:'sats'},overlaying:'y',side:'right',showgrid:false,rangemode:'tozero'}),margin:{l:80,r:56,t:30,b:36}}),cfg);
   react('p-ekf',[L(D.ev,'velocity',c1),L(D.eph,'pos horiz',c3),L(D.epv,'pos vert',c2),L(D.ec,'compass',c4)],
     B({yaxis:axis({title:{text:'variance'},rangemode:'tozero'}),shapes:base().shapes.concat([{type:'line',xref:'paper',x0:0,x1:1,y0:.8,y1:.8,line:{color:c4,width:1,dash:'dot'}}])}),cfg);
-  if(W)react('p-wind',[{x:W.t,y:W.spd,name:'speed',type:'scatter',mode:'lines',line:{color:c1,width:1.3}},
-      {x:W.t,y:W.dir,name:'direction',type:'scatter',mode:'markers',yaxis:'y2',marker:{color:c2,size:3}}],
-    B({yaxis:axis({title:{text:'m/s'},rangemode:'tozero'}),yaxis2:axis({title:{text:'deg'},overlaying:'y',side:'right',showgrid:false,range:[0,360],dtick:90})}),cfg);
+  const wt=[];
+  if(W)wt.push({x:W.t,y:W.spd,name:'wind drone',type:'scatter',mode:'lines',line:{color:c1,width:1.3}},
+      {x:W.t,y:W.dir,name:'wind drone dir',type:'scatter',mode:'markers',yaxis:'y2',marker:{color:c1,size:3,opacity:.5},showlegend:false});
+  if(H)wt.push({x:H.t,y:H.spd,name:'HWAS',type:'scatter',mode:'lines+markers',line:{color:c3,width:2.2,shape:'hv'},marker:{size:5}},
+      {x:H.t,y:H.gust,name:'HWAS gust',type:'scatter',mode:'lines',line:{color:c3,width:1.2,dash:'dot',shape:'hv'},connectgaps:false},
+      {x:H.t,y:H.dir,name:'HWAS dir',type:'scatter',mode:'markers',yaxis:'y2',marker:{color:c3,size:6,symbol:'diamond'},showlegend:false});
+  if(wt.length)react('p-wind',wt,B({yaxis:axis({title:{text:'m/s'},rangemode:'tozero'}),
+    yaxis2:axis({title:{text:'from [deg]'},overlaying:'y',side:'right',showgrid:false,range:[0,360],dtick:90})}),cfg);
+  const tt=[];
+  if(H)tt.push({x:H.t,y:H.temp,name:'air (HWAS)',type:'scatter',mode:'lines+markers',line:{color:c3,width:2.2,shape:'hv'},marker:{size:5}});
+  if(W)tt.push({x:W.t,y:W.temp,name:'wind-drone sensor',type:'scatter',mode:'lines',line:{color:c1,width:1.3}});
+  if(has('btemp'))tt.push(L(D.btemp,'battery',c4,{line:{color:c4,width:1.6}}));
+  if(tt.length)react('p-temp',tt,B({yaxis:axis({title:{text:'°C'}})}),cfg);
 }
 let busy=false;
 function nearest(a,x){let lo=0,hi=a.length-1;while(hi-lo>1){const m=(lo+hi)>>1;if(a[m]<x)lo=m;else hi=m;}return Math.abs(a[lo]-x)<=Math.abs(a[hi]-x)?lo:hi;}
@@ -376,6 +408,7 @@ function hook(){
     el.on('plotly_hover',ev=>{const i=nearest(D.t,ev.points[0].x);
       let s=`t ${D.t[i].toFixed(2)} s | ${D.local[i]} | ${D.mode[i]} | alt ${D.alt[i]} m | gs ${D.gs[i]} m/s | ${D.V[i]} V ${D.I[i]} A | ${D.mah[i]} mAh | ${FIXN[D.fixt[i]]||'GPS'} | sats ${D.sats[i]} hdop ${D.hdop[i]}`;
       if(W&&W.t.length){const j=nearest(W.t,D.t[i]);if(Math.abs(W.t[j]-D.t[i])<1)s+=` | wind ${W.spd[j]} m/s @ ${W.dir[j]}°`;}
+      if(H&&H.t.length){const j=nearest(H.t,D.t[i]);if(Math.abs(H.t[j]-D.t[i])<=15)s+=` | HWAS ${H.spd[j]} m/s @ ${H.dir[j]}°, ${H.temp[j]} °C`;}
       document.getElementById('readout').textContent=s;});
   });
 }

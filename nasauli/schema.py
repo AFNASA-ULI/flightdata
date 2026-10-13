@@ -70,7 +70,7 @@ FLIGHT_COLUMNS = {
     "batt_current_a": ("A", "Battery current"),
     "batt_consumed_mah": ("mAh", "Charge consumed"),
     "batt_remaining_pct": ("%", "Battery remaining (autopilot estimate)"),
-    "batt_temp_c": ("degC", "Battery temperature (logger's own sensor)"),
+    "batt_temp_c": ("degC", "Battery temperature (logger's own sensor on the battery)"),
     # motors
     "motor1_us": ("us", "Servo/motor output 1"),
     "motor2_us": ("us", "Servo/motor output 2"),
@@ -93,9 +93,24 @@ FLIGHT_COLUMNS = {
     "baro_press_hpa": ("hPa", "Barometric pressure"),
     "baro_temp_c": ("degC", "Barometer temperature"),
     # autopilot wind estimate
-    "ap_wind_dir_deg": ("deg", "Autopilot wind estimate, direction"),
-    "ap_wind_speed_m_s": ("m/s", "Autopilot wind estimate, speed"),
-    "ap_wind_speed_z_m_s": ("m/s", "Autopilot wind estimate, vertical speed"),
+    # The autopilot does not measure wind: WND_* is an estimate that stays at 0 / -180 in these logs. Kept for
+    # completeness only; wind comes from the wind drone and the HWAS station (wind.*, hwas.*).
+    "ap_wind_dir_deg": ("deg", "Not used: autopilot wind estimate (not a measurement), direction"),
+    "ap_wind_speed_m_s": ("m/s", "Not used: autopilot wind estimate (not a measurement), speed"),
+    "ap_wind_speed_z_m_s": ("m/s", "Not used: autopilot wind estimate (not a measurement), vertical speed"),
+}
+
+HWAS_COLUMNS = {
+    "time_utc": ("UTC", "Station time (reported in Mountain Time, converted)"),
+    "time_local": ("America/Denver", "Station time in Mountain Time"),
+    "elapsed_s": ("s", "Seconds on the matching flight's elapsed_s axis"),
+    "wind_speed_m_s": ("m/s", "Wind speed (station reports whole knots)"),
+    "wind_dir_deg": ("deg", "Direction the wind comes from"),
+    "gust_m_s": ("m/s", "Gust speed (0 = no gust reported)"),
+    "temperature_c": ("degC", "Air temperature (station reports whole °F)"),
+    "humidity_pct": ("%", "Relative humidity"),
+    "pressure_sealevel_pa": ("Pa", "Pressure as reported (~101.5 kPa, so sea-level-adjusted, not station pressure)"),
+    "source": ("-", "HWAS export file the row came from"),
 }
 
 # MAVLink GPS_FIX_TYPE -> (name, typical horizontal accuracy). Rules of thumb for open sky, not guarantees.

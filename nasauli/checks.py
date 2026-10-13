@@ -157,18 +157,14 @@ def run_checks(s: Session, summary: dict) -> list[dict]:
         elif w["coverage_pct"] < 99:
             add("warn", "Wind log only partly overlaps this flight",
                 f"It covers {w['coverage_pct']}% of the flight.")
+    if s.hwas is None:
+        add("info", "No HWAS weather-station data", "No HWAS export in raw_data/hwas_data/ covers this flight.")
 
     # --- reader notes (known quirks of this log format)
     for note in info.get("notes", []):
         add("info", "Log format note", note)
 
     # --- clocks
-    off = info.get("gps_clock_offset_s")
-    if h.get("chrony_synchronised", "").lower() == "false":
-        add("warn", "Logger clock not synchronized",
-            "The header says chrony_synchronised: False"
-            + (f"; the host clock is {abs(off):.2f} s {'behind' if off > 0 else 'ahead of'} the autopilot's GPS time. "
-               "time_gps_utc corrects for this." if off is not None else "."))
     rtc = info.get("raw_rtc_utc")
     if rtc is not None and rtc.notna().any():
         first = str(rtc.dropna().iloc[0])
@@ -223,10 +219,12 @@ def run_checks(s: Session, summary: dict) -> list[dict]:
         cols = empty + mapped_empty
         add("info", "Empty columns", f"{len(cols)} column(s) have no data: " + ", ".join(cols[:30])
             + (" …" if len(cols) > 30 else ""))
-    wind_ap = df[["ap_wind_speed_m_s", "ap_wind_dir_deg"]].dropna()
-    if len(wind_ap) and wind_ap.nunique().max() <= 1:
-        add("info", "Autopilot wind estimate is constant",
-            f"WND_* stays at speed {wind_ap.iloc[0, 0]}, direction {wind_ap.iloc[0, 1]} for the whole log.")
+    # --- battery temperature sensor enabled but silent
+    if h.get("temp_enabled", "").lower() == "true" and df["batt_temp_c"].isna().all():
+        add("warn", "No battery temperature recorded",
+            "The header says temp_enabled: True"
+            + (f" (i2c_unavailable: {h['i2c_unavailable']})" if h.get("i2c_unavailable") else "")
+            + ", but Battery_Temp_C is empty for the whole log. Check the sensor and its wiring.")
 
     # --- RTK fix held?
     fixes = {f["type"]: f for f in summary.get("gps", {}).get("fix", [])}

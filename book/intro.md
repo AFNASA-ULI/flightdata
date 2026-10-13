@@ -39,8 +39,9 @@ Everything at once, all cleaned data in one zip, or the data for a single drone.
 ## How the data is organized
 
 - **Raw data** is never edited. Each flight has a folder in
-  [`raw_data/`](https://github.com/AFNASA-ULI/flightdata/tree/main/raw_data); wind-drone logs are in
-  `raw_data/wind_drone/` and are matched to flights by time.
+  [`raw_data/`](https://github.com/AFNASA-ULI/flightdata/tree/main/raw_data). Wind-drone logs
+  (`raw_data/wind_drone/`) and the USAFA mesonet HWAS weather station (`raw_data/hwas_data/`) are matched to
+  flights by time.
 - **Processed data** (`processed/<flight>/`) is generated from the raw data by the `nasauli` Python package: a
   standard set of columns with fixed names and units, the wind data for that flight, and a `metadata.json`
   with the summary and data-quality findings. See [Processed data](data/processed.md).

@@ -16,6 +16,7 @@ the flight controller. Wind data comes from a separate "wind drone" that records
 ```
 raw_data/<flight>/            original flight logs (one folder per flight, named <Drone>_<UTC offload time>)
 raw_data/wind_drone/          wind-drone bags + *_csv exports; one log can cover several flights
+raw_data/hwas_data/           USAFA mesonet HWAS weather-station CSVs (30 s, Mountain Time); readers/hwas.py
 processed/<flight>/           flight/wind .parquet+.csv, metadata.json; generated, never edit by hand
 nasauli/readers/              one module per raw format -> standard schema (nasauli/schema.py)
 nasauli/platforms.py          drone registry (website groups experiments by drone)
@@ -52,6 +53,8 @@ There is no test suite; validate a change by running `process` on all flights an
   messages) is Mountain Time via `nasauli/localtime.py` (America/Denver).
 - GPS accuracy wording: RTK is "cm-level vs. base" (base = Reach RS2+, not surveyed; `schema.RTK_BASE`).
   EKF `alt_rel_m` is barometric; takeoff elevation comes from RTK `gps_alt_m` before takeoff when available.
+- Wind comes from the wind drone and HWAS only; the autopilot's `WND_*`/`ap_wind_*` estimate is not used. The
+  logger-clock (chrony) warning was dropped on request; the GPS clock offset is still applied.
 - Wind bags whose `.mcap` lacks the MCAP end marker were never closed cleanly (possibly cut short); the site
   and checks flag this.
 - v2 raw logs start with `# key: value` lines ending in `# ---`. Column groups map to MAVLink messages
