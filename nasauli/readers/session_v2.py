@@ -161,7 +161,9 @@ def read(path: Path) -> tuple[pd.DataFrame, dict]:
 
     # Heartbeats from every MAVLink component on the link end up in HB_*; only the autopilot sets
     # MAV_MODE_FLAG_CUSTOM_MODE_ENABLED (bit 0). Armed is bit 7 of base_mode.
-    base = pd.to_numeric(raw.get("HB_BaseMode"), errors="coerce")
+    # (A log recorded without a MAVLink connection has no HB_* columns at all.)
+    base = pd.to_numeric(raw["HB_BaseMode"], errors="coerce") if "HB_BaseMode" in raw.columns \
+        else pd.Series(np.nan, index=raw.index)
     autopilot = base.notna() & ((base.fillna(0).astype(int) & 1) == 1)
     armed = ((base.fillna(0).astype(int) & 128) != 0).where(autopilot)
     out["armed"] = armed.ffill().fillna(False).astype(bool)

@@ -1,17 +1,18 @@
 {
-  "pipeline_version": "1.4.0",
-  "flight_id": "Tarot450_20260929_170629Z",
+  "pipeline_version": "1.5.0",
+  "flight_id": "Tarot450_20260929_111332",
   "platform": {
     "id": "TAROT_450",
     "label": "Tarot 450",
     "kind": "Quadcopter",
-    "description": "Tarot 450 quadcopter with an ArduPilot flight controller and a Raspberry Pi logger."
+    "description": "Tarot 450 quadcopter with an ArduPilot flight controller and a Raspberry Pi logger.",
+    "short": "Tarot450"
   },
   "reader": "session_v2",
   "source": {
-    "file": "raw_data/Tarot450_20260929_170629Z/TAROT_450_20260929T164305Z.csv",
-    "sha256": "84b9666a781b52bb0af95e02e6c5ac1e03b1dc6f6158285c64b49f0bbd0e0e43",
-    "bytes": 8914900
+    "file": "raw_data/Tarot450_20260929_171951Z/TAROT_450_20260929T170942Z.csv",
+    "sha256": "783fb50f7838ddd98e590e41eb1fb290fe2d13fb96660ad509ecd26748e5f4d0",
+    "bytes": 9053686
   },
   "files": [
     "flight.parquet",
@@ -25,18 +26,18 @@
   "header": {
     "format": "nasauli session log v2.0.0",
     "format_version": "2.0.0",
-    "session_id": "TAROT_450_20260929T164305Z",
+    "session_id": "TAROT_450_20260929T170942Z",
     "platform": "TAROT_450",
     "platform_label": "Tarot 450 (quad)",
     "mode": "flight",
-    "start_utc": "2026-09-29T16:43:13.174Z",
+    "start_utc": "2026-09-29T17:13:30.921Z",
     "sample_rate_hz_target": "20.0",
     "operator": "Grant",
     "location": "Athletic Fields",
     "factorial_condition": "",
     "replicate": "",
     "commanded_altitude_m": "25",
-    "commanded_speed_ms": "5",
+    "commanded_speed_ms": "13",
     "adc_enabled": "False",
     "temp_enabled": "True",
     "mavlink_enabled": "True",
@@ -53,66 +54,98 @@
     "mavlink_groups": "core,power,flight,quality,wind"
   },
   "summary": {
-    "session_id": "TAROT_450_20260929T164305Z",
+    "session_id": "TAROT_450_20260929T170942Z",
     "platform": "Tarot 450",
     "platform_id": "TAROT_450",
-    "start_utc": "2026-09-29T16:43:14.766000+00:00",
-    "end_utc": "2026-09-29T16:49:21.692000+00:00",
-    "start_local": "2026-09-29T10:43:14.862294880-06:00",
-    "end_local": "2026-09-29T10:49:21.788294880-06:00",
-    "duration_s": 366.9,
-    "samples": 7340,
+    "start_utc": "2026-09-29T17:13:32.067000+00:00",
+    "end_utc": "2026-09-29T17:19:44.057000+00:00",
+    "start_local": "2026-09-29T11:13:32.160899012-06:00",
+    "end_local": "2026-09-29T11:19:44.150899012-06:00",
+    "duration_s": 372.0,
+    "samples": 7441,
     "sample_rate_hz": 20.0,
     "modes": [
       [
         0.0,
-        0.8,
-        "\u2014"
-      ],
-      [
-        0.8,
-        86.85,
+        9.15,
         "POSHOLD"
       ],
       [
-        86.85,
-        366.95,
+        9.15,
+        28.65,
+        "AUTO"
+      ],
+      [
+        28.65,
+        136.9,
+        "RTL"
+      ],
+      [
+        136.9,
+        141.1,
+        "POSHOLD"
+      ],
+      [
+        141.1,
+        147.35,
+        "AUTO"
+      ],
+      [
+        147.35,
+        170.4,
+        "RTL"
+      ],
+      [
+        170.4,
+        372.0,
         "AUTO"
       ]
     ],
-    "takeoff_s": 88.8,
-    "landing_s": 359.8,
-    "airborne_s": 270.9,
-    "landed_in_log": true,
-    "max_alt_rel_m": 25.5,
+    "takeoff_s": 11.2,
+    "landing_s": 371.8,
+    "airborne_s": 360.6,
+    "landed_in_log": false,
+    "max_alt_rel_m": 50.6,
     "max_range_m": 385.0,
-    "cruise_alt_m": 25.0,
-    "cruise_speed_m_s": 5.0,
-    "cruise_current_a": 9.9,
+    "cruise_alt_m": 50.0,
+    "cruise_speed_m_s": 12.1,
+    "cruise_current_a": 11.0,
     "mission_items": 6,
-    "rtl_s": null,
-    "batt_consumed_mah": 741.0,
-    "batt_v_start": 16.44,
-    "batt_v_end": 15.44,
+    "rtl_s": 28.6,
+    "batt_consumed_mah": 878.0,
+    "batt_v_start": 16.57,
+    "batt_v_end": 15.4,
     "batt_v_end_at_rest": true,
     "gps": {
       "basis": "airborne",
-      "sats_min": 31.0,
-      "hdop_max": 0.79,
+      "sats_min": 15.0,
+      "hdop_max": 9.64,
       "fix": [
         {
           "type": 6,
           "name": "RTK Fixed",
           "accuracy": "cm-level vs. base",
-          "pct": 100.0
+          "pct": 91.0
+        },
+        {
+          "type": 5,
+          "name": "RTK Float",
+          "accuracy": "~0.2\u20131 m vs. base",
+          "pct": 8.0
+        },
+        {
+          "type": 4,
+          "name": "DGPS/SBAS",
+          "accuracy": "~0.5\u20132 m",
+          "pct": 0.9
         }
       ],
-      "home_msl_m": 2168.48,
+      "home_msl_m": 2165.41,
       "home_msl_source": "RTK GPS before takeoff",
       "baro_minus_rtk_m": {
-        "median": 3.77,
-        "p5": 1.76,
-        "p95": 5.23
+        "median": -0.63,
+        "p5": -3.04,
+        "p95": 2.54
       }
     }
   },
@@ -125,12 +158,17 @@
     {
       "level": "warn",
       "title": "High compass variance",
-      "detail": "EKF compass variance peaks at 1.48 (t = 341.5 s). ArduPilot's default failsafe threshold is 0.8."
+      "detail": "EKF compass variance peaks at 2.00 (t = 147.4 s). ArduPilot's default failsafe threshold is 0.8."
+    },
+    {
+      "level": "warn",
+      "title": "Weak GPS in flight",
+      "detail": "Minimum 15 satellites, maximum HDOP 9.64 while airborne."
     },
     {
       "level": "info",
       "title": "HB_Armed mixes heartbeats from several MAVLink components",
-      "detail": "The raw HB_Armed column flips 518 times. The cleaned armed column only uses autopilot heartbeats (base_mode bit 0 set) and changes 2 times. The logger should filter heartbeats to the autopilot's sysid/compid."
+      "detail": "The raw HB_Armed column flips 616 times. The cleaned armed column only uses autopilot heartbeats (base_mode bit 0 set) and changes 4 times. The logger should filter heartbeats to the autopilot's sysid/compid."
     },
     {
       "level": "info",
@@ -139,26 +177,36 @@
     },
     {
       "level": "info",
+      "title": "Log ends while airborne",
+      "detail": "The log stops before the vehicle landed."
+    },
+    {
+      "level": "info",
       "title": "Empty columns",
       "detail": "24 column(s) have no data: BAT_Cell2_V, BAT_Cell3_V, BAT_Cell4_V, BAT_Temp_cdegC, BAT_TimeRemaining_s, ESC1_RPM, ESC2_RPM, ESC3_RPM, ESC4_RPM, ESC1_V, ESC2_V, ESC3_V, ESC4_V, ESC1_A, ESC2_A, ESC3_A, ESC4_A, ESC1_degC, ESC2_degC, ESC3_degC, ESC4_degC, ESC_rx_UTC, ESC_Age_ms, batt_temp_c"
     },
     {
       "level": "info",
+      "title": "RTK fix not held for the whole flight",
+      "detail": "RTK Fixed (cm-level vs. base) for 91% of the airborne time; the rest was RTK Float 8% (~0.2\u20131 m vs. base); DGPS/SBAS 1% (~0.5\u20132 m). Positions in those stretches are less accurate; the GPS panel shows when."
+    },
+    {
+      "level": "info",
       "title": "Barometric altitude differs from RTK height",
-      "detail": "alt_rel_m (EKF, barometer-based) minus the RTK GPS height above takeoff: median +3.8 m, 5\u201395% range +1.8 to +5.2 m in flight. For precise height use gps_alt_m while the fix is RTK Fixed."
+      "detail": "alt_rel_m (EKF, barometer-based) minus the RTK GPS height above takeoff: median -0.6 m, 5\u201395% range -3.0 to +2.5 m in flight. For precise height use gps_alt_m while the fix is RTK Fixed."
     }
   ],
   "home": {
-    "lat_deg": 39.0187777,
-    "lon_deg": -104.8936053
+    "lat_deg": 39.0187733,
+    "lon_deg": -104.8936034
   },
-  "gps_clock_offset_s": 0.0963,
+  "gps_clock_offset_s": 0.0939,
   "missing_columns": [],
   "wind": {
-    "flight_start_gps_utc": "2026-09-29T16:43:14.862294880+00:00",
-    "flight_end_gps_utc": "2026-09-29T16:49:21.788294880+00:00",
+    "flight_start_gps_utc": "2026-09-29T17:13:32.160899012+00:00",
+    "flight_end_gps_utc": "2026-09-29T17:19:44.150899012+00:00",
     "margin_s": 5.0,
-    "rows": 1885,
+    "rows": 1910,
     "coverage_pct": 100.0,
     "sources": [
       "wind_drone_20260929"
@@ -167,23 +215,81 @@
     "logs_available": [
       {
         "name": "wind_drone_20260925_102813_csv",
+        "kind": "csv",
         "start_utc": "2026-09-25T16:28:15.725896202+00:00",
         "end_utc": "2026-09-25T16:58:18.928394923+00:00",
         "rows": 9017,
-        "bag_closed": false
+        "bag_closed": false,
+        "unique_rows": 9017
       },
       {
         "name": "wind_drone_20260929",
+        "kind": "csv",
         "start_utc": "2026-09-29T16:06:03.122489379+00:00",
         "end_utc": "2026-09-29T17:21:54.761608123+00:00",
         "rows": 22759,
-        "bag_closed": null
+        "bag_closed": null,
+        "unique_rows": 22759
+      },
+      {
+        "name": "wind_drone_20260929_100600",
+        "kind": "mcap",
+        "start_utc": "2026-09-29T16:06:03.122489379+00:00",
+        "end_utc": "2026-09-29T17:21:54.761608123+00:00",
+        "rows": 22759,
+        "bag_closed": true,
+        "unique_rows": 0
+      },
+      {
+        "name": "wind_drone_20260930_141446_csv",
+        "kind": "csv",
+        "start_utc": "2026-09-30T20:14:48.532804215+00:00",
+        "end_utc": "2026-09-30T20:17:20.135207457+00:00",
+        "rows": 759,
+        "bag_closed": true,
+        "unique_rows": 759
+      },
+      {
+        "name": "wind_drone_20261007_101012_csv",
+        "kind": "csv",
+        "start_utc": "2026-10-07T16:10:14.934408487+00:00",
+        "end_utc": "2026-10-07T16:52:24.131376534+00:00",
+        "rows": 12647,
+        "bag_closed": true,
+        "unique_rows": 12647
+      },
+      {
+        "name": "wind_drone_20261007_105259_csv",
+        "kind": "csv",
+        "start_utc": "2026-10-07T16:53:01.728972446+00:00",
+        "end_utc": "2026-10-07T17:18:05.915652242+00:00",
+        "rows": 7522,
+        "bag_closed": true,
+        "unique_rows": 7522
+      },
+      {
+        "name": "wind_drone_20261009_094601",
+        "kind": "mcap",
+        "start_utc": "2026-10-09T15:46:03.907068760+00:00",
+        "end_utc": "2026-10-09T16:04:45.351633318+00:00",
+        "rows": 5608,
+        "bag_closed": true,
+        "unique_rows": 5608
+      },
+      {
+        "name": "wind_drone_20261009_100606",
+        "kind": "mcap",
+        "start_utc": "2026-10-09T16:06:08.359087437+00:00",
+        "end_utc": "2026-10-09T16:45:12.550355651+00:00",
+        "rows": 11722,
+        "bag_closed": false,
+        "unique_rows": 11722
       }
     ]
   },
   "hwas": {
     "margin_s": 60.0,
-    "rows": 17,
+    "rows": 16,
     "sources": [
       "hwas_wx_data_20260929_075519.csv"
     ],
