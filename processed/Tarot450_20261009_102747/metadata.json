@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.5.0",
+  "pipeline_version": "1.5.1",
   "flight_id": "Tarot450_20261009_102747",
   "platform": {
     "id": "TAROT_450",
@@ -186,7 +186,7 @@
     "rows": 1637,
     "coverage_pct": 100.0,
     "sources": [
-      "wind_drone_20261009_100606"
+      "wind_drone_20261009_100606_csv"
     ],
     "reader": "wind_ros2_csv",
     "logs_available": [
@@ -254,8 +254,8 @@
         "unique_rows": 5608
       },
       {
-        "name": "wind_drone_20261009_100606",
-        "kind": "mcap",
+        "name": "wind_drone_20261009_100606_csv",
+        "kind": "csv",
         "start_utc": "2026-10-09T16:06:08.359087437+00:00",
         "end_utc": "2026-10-09T16:45:12.550355651+00:00",
         "rows": 11722,

@@ -8,6 +8,8 @@
 2. Copy any new wind-drone recordings into `raw_data/wind_drone/`: the ROS 2 bag folder, plus its `_csv`
    export if you made one (the bag alone is enough). They are matched to flights by time, so one wind log can
    cover several flights.
+   If a bag's `metadata.yaml` is missing or empty (the recorder was cut off), rebuild it and the CSV export with
+   `python -m nasauli repair-bag raw_data/wind_drone/<bag_folder>`.
    HWAS weather-station exports (`hwas_wx_data_<date>_<time>.csv`) go in `raw_data/hwas_data/`.
 3. Commit and push to `main`.
 
