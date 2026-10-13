@@ -36,6 +36,7 @@ book/                         hand-written site pages (intro.md, contributing.md
 pip install -r requirements.txt -r requirements-site.txt
 python -m nasauli process [raw_data/FLIGHT ...]   # all flights by default
 python -m nasauli site --out _site                # Jupyter Book build; generated sources in _build/book
+python -m nasauli repair-bag raw_data/wind_drone/<bag>   # rebuild metadata.yaml + <bag>_csv from the .mcap
 ```
 
 There is no test suite; validate a change by running `process` on all flights and checking the output
@@ -52,7 +53,9 @@ There is no test suite; validate a change by running `process` on all flights an
   where the log sits under raw_data/. `process` (all flights) prunes processed/ folders no log produces.
 - Logs with no autopilot data (logger had no MAVLink connection) are skipped and listed in skipped.json.
 - Wind-drone recordings are read from their `_csv` export when present, else straight from the .mcap
-  (mcap + mcap-ros2-support, no ROS needed); duplicate rows across sources are dropped.
+  (mcap + mcap-ros2-support, no ROS needed); duplicate rows across sources are dropped. `nasauli/bagtools.py`
+  reproduces the team's ROS 2 CSV export byte-for-byte and the recorder's metadata.yaml (validated on the
+  complete 2026-10-07/09 bags); it was used to rebuild wind_drone_20261009_100606 (unclosed, empty metadata).
 - Anything that changes processed outputs: bump `nasauli.__version__`.
 - Generated site pages live only in `_build/`; edit `nasauli/book.py` or `book/`, never the output.
 - Times: data files keep UTC columns plus `time_local`; everything shown to people (site, reports, check

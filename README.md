@@ -39,6 +39,7 @@ pip install -r requirements.txt                 # processing
 python -m nasauli process                       # raw_data/ -> processed/
 pip install -r requirements-site.txt            # website
 python -m nasauli site --out _site              # open _site/index.html
+python -m nasauli repair-bag raw_data/wind_drone/<bag>   # rebuild a bag's metadata.yaml and _csv export
 ```
 
 ## Cleaned data
