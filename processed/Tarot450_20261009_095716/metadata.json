@@ -164,7 +164,7 @@
     "rows": 1943,
     "coverage_pct": 100.0,
     "sources": [
-      "wind_drone_20261009_094601"
+      "wind_drone_20261009_094601_csv"
     ],
     "reader": "wind_ros2_csv",
     "logs_available": [
@@ -223,8 +223,8 @@
         "unique_rows": 7522
       },
       {
-        "name": "wind_drone_20261009_094601",
-        "kind": "mcap",
+        "name": "wind_drone_20261009_094601_csv",
+        "kind": "csv",
         "start_utc": "2026-10-09T15:46:03.907068760+00:00",
         "end_utc": "2026-10-09T16:04:45.351633318+00:00",
         "rows": 5608,
