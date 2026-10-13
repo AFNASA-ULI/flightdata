@@ -1,0 +1,3 @@
+bag_time_ns,header.stamp.sec,header.stamp.nanosec,header.frame_id,voltage,temperature,current,charge,capacity,design_capacity,percentage,power_supply_status,power_supply_health,power_supply_technology,present,cell_voltage,cell_temperature,location,serial_number
+1790799434041245077,1790799434,38553263,cube_link,0.0860000029206276,0.0,268.3500061035156,0.0,0.0,0.0,1.1100000143051147,2,0,0,True,array('f'),array('f'),,
+1790799435041132553,1790799435,38634976,cube_link,0.08299999684095383,0.0,268.3500061035156,0.0,0.0,0.0,1.1100000143051147,2,0,0,True,array('f'),array('f'),,
