@@ -44,7 +44,7 @@ class Session:
 
     @property
     def flight_id(self) -> str:
-        return self.source.parent.name
+        return self.info["flight_id"]
 
 
 def armed_or_unknown(df: pd.DataFrame) -> pd.Series:
@@ -146,16 +146,37 @@ def load_hwas_logs(root: Path) -> tuple[pd.DataFrame | None, tuple[dict, ...]]:
 def load_wind_logs(root: Path) -> tuple[pd.DataFrame | None, tuple[dict, ...]]:
     """All wind-drone logs under raw_data/wind_drone/, concatenated, plus a per-log summary."""
     parts, logs = [], []
-    for d in wind_ros2.find(root / RAW / WIND_DIR):
-        w = wind_ros2.read(d)
+    for d in wind_ros2.recordings(root / RAW / WIND_DIR):
+        w = wind_ros2.read_any(d)
+        if not len(w):
+            continue
         w["source"] = d.name
         parts.append(w)
-        logs.append({"name": d.name, "start_utc": w["time_utc"].min().isoformat(),
+        logs.append({"name": d.name, "kind": "csv" if (d / wind_ros2.WIND_FILE).exists() else "mcap",
+                     "start_utc": w["time_utc"].min().isoformat(),
                      "end_utc": w["time_utc"].max().isoformat(), "rows": int(len(w)),
                      "bag_closed": wind_ros2.bag_closed(d)})
     if not parts:
         return None, ()
-    return pd.concat(parts).sort_values("time_utc").reset_index(drop=True), tuple(logs)
+    # The same recording can be present twice (e.g. a CSV export and a bag with a different folder name).
+    allw = pd.concat(parts).sort_values(["time_utc", "source"])
+    allw = allw.drop_duplicates(subset=["time_utc", "wind_speed_m_s", "wind_dir_deg"], keep="first")
+    kept = allw["source"].value_counts()
+    for lg in logs:
+        lg["unique_rows"] = int(kept.get(lg["name"], 0))
+    return allw.reset_index(drop=True), tuple(logs)
+
+
+def make_flight_id(platform: dict, df: pd.DataFrame, stem: str) -> str:
+    """<drone>_<Mountain Time start>, e.g. Tarot450_20260925_103958: stable however raw_data/ is organized."""
+    t = df["time_local"].dropna()
+    if not len(t):
+        t = series_to_local(df["time_utc"].dropna())
+    return f"{platform['short']}_{t.min():%Y%m%d_%H%M%S}" if len(t) else stem
+
+
+def has_autopilot_data(df: pd.DataFrame) -> bool:
+    return bool(df[["lat_deg", "roll_deg", "alt_rel_m"]].notna().any().any())
 
 
 def load_session(csv_path: Path, root: Path) -> Session | None:
@@ -167,7 +188,12 @@ def load_session(csv_path: Path, root: Path) -> Session | None:
     info["home"] = add_local_position(df)
     h = info["header"]
     info["platform"] = platform_for(h.get("platform"), csv_path.parent.name, h.get("platform_label"))
+    info["flight_id"] = make_flight_id(info["platform"], df, csv_path.stem)
+    info["source_rel"] = csv_path.relative_to(root).as_posix()
+    info["has_autopilot_data"] = has_autopilot_data(df)
     sess = Session(source=csv_path, flight=df, info=info)
+    if not info["has_autopilot_data"]:
+        return sess
 
     wind, logs = load_wind_logs(root)
     if wind is not None and df["time_gps_utc"].notna().any():
@@ -183,11 +209,16 @@ def load_session(csv_path: Path, root: Path) -> Session | None:
 
 
 def find_flight_dirs(root: Path) -> list[Path]:
+    """Folders under raw_data/ that hold flight logs (any layout: one per drone, per day or per flight)."""
     base = root / RAW
     skip = {WIND_DIR, hwas.DIR}
     return sorted(p for p in base.iterdir() if p.is_dir() and p.name not in skip) if base.is_dir() else []
 
 
 def raw_logs(flight_dir: Path) -> list[Path]:
-    """Flight logs in a raw_data/<flight> folder (hand-edited ``*_Fixed`` copies excluded)."""
-    return sorted(p for p in flight_dir.glob("*.csv") if not p.stem.endswith("_Fixed"))
+    """Flight logs in a folder and its subfolders (hand-edited ``*_Fixed`` copies excluded)."""
+    return sorted(p for p in flight_dir.rglob("*.csv") if not p.stem.endswith("_Fixed"))
+
+
+def all_raw_logs(root: Path) -> list[Path]:
+    return [p for d in find_flight_dirs(root) for p in raw_logs(d)]

@@ -21,8 +21,8 @@ import pandas as pd
 import yaml
 
 from . import __version__
-from .clean import RAW, WIND_DIR, find_flight_dirs, load_hwas_logs, load_wind_logs
-from .pipeline import PROCESSED, load_all_metadata
+from .clean import RAW, WIND_DIR, load_hwas_logs, load_wind_logs, raw_logs
+from .pipeline import PROCESSED, load_all_metadata, load_skipped
 from .localtime import LOCAL_LABEL, fmt
 from .platforms import PLATFORMS
 from .report import render, stat_tiles, title_for
@@ -195,22 +195,24 @@ class Book:
                 "The logs exactly as they came off the drones. They are never edited; cleaning happens in the "
                 f"processing step. Browse them on [GitHub]({tree(RAW)}) or open a flight below for its file list, "
                 "header information and a column overview.", ""]
-        by_folder = {m["flight_id"]: m for m in self.metas}
         for pid in self.platform_order:
             ms = self.by_platform[pid]
-            text += [f"## {ms[0]['platform']['label']}", "", f"| Flight | Date ({LOCAL_LABEL}) | Files | Size | Format |",
-                     "|---|---|---:|---:|---|"]
+            text += [f"## {ms[0]['platform']['label']}", "", f"| Flight ({LOCAL_LABEL}) | Log file | Size |",
+                     "|---|---|---:|"]
             for m in ms:
-                files = [f for f in (self.root / RAW / m["flight_id"]).iterdir() if f.is_file()]
-                text.append(f"| [{m['flight_id']}]({page_id(m)}.md) | {when(m)} | {len(files)} | "
-                            f"{size(sum(f.stat().st_size for f in files))} | {esc(m['header'].get('format', ''))} |")
+                src = m["source"]["file"]
+                text.append(f"| [{when(m)}]({page_id(m)}.md) | [`{src.removeprefix(RAW + '/')}`]"
+                            f"({blob(src)}) | {size(m['source']['bytes'])} |")
                 sections.append({"file": f"data/raw/{page_id(m)}"})
                 self.raw_flight_page(m)
             text.append("")
-        unprocessed = [d for d in find_flight_dirs(self.root) if d.name not in by_folder]
-        if unprocessed:
-            text += ["## Not processed", "", "Folders with no log the pipeline can read:", ""]
-            text += [f"- [{d.name}]({tree(f'{RAW}/{d.name}')})" for d in unprocessed]
+        skipped = load_skipped(self.root)
+        if skipped:
+            text += ["## Not processed", "", "Logs under raw_data/ that are not shown under Experiments:", "",
+                     f"| Log file | Start ({LOCAL_LABEL}) | Reason |", "|---|---|---|"]
+            text += [f"| [`{sk['file'].removeprefix(RAW + '/')}`]({blob(sk['file'])}) | "
+                     f"{fmt(sk['start_utc'], '%Y-%m-%d %H:%M %Z') if sk.get('start_utc') else '–'} | {esc(sk['reason'])} |"
+                     for sk in skipped]
             text.append("")
         _, logs = load_wind_logs(self.root)
         text += ["## Wind drone", "", f"{len(logs)} log(s); see [wind drone](wind_drone.md).", ""]
@@ -223,18 +225,26 @@ class Book:
         self.write("data/raw/index.md", "\n".join(text))
         return {"file": "data/raw/index", "sections": sections}
 
+    def log_files(self, m: dict) -> list[Path]:
+        """The flight's log, plus the other files in its folder when that folder holds only this one log
+        (e.g. an offload manifest). In a folder shared by many logs, only the log itself."""
+        src = self.root / m["source"]["file"]
+        if raw_logs(src.parent) == [src]:
+            return sorted(f for f in src.parent.iterdir() if f.is_file())
+        return [src]
+
     def raw_flight_page(self, m: dict) -> None:
-        folder = self.root / RAW / m["flight_id"]
-        rel = f"{RAW}/{m['flight_id']}/"
+        src = m["source"]["file"]
+        folder = src.rsplit("/", 1)[0]
         text = [f"# {m['flight_id']}", "",
                 f"{m['platform']['label']}, {when(m)}. Analysis: [experiment page](../../experiments/"
-                f"{m['platform']['id']}/{page_id(m)}.md). Folder on [GitHub]({tree(rel)}).", "",
+                f"{m['platform']['id']}/{page_id(m)}.md). Folder on [GitHub]({tree(folder)}).", "",
                 "## Files", "", "| File | Size | |", "|---|---:|---|"]
-        for f in sorted(folder.iterdir()):
-            if f.is_file():
-                note = " (read by the pipeline)" if f.name == Path(m["source"]["file"]).name else ""
-                text.append(f"| {f.name}{note} | {size(f.stat().st_size)} | [view]({blob(rel + f.name)}) · "
-                            f"[download]({raw_url(rel + f.name)}) |")
+        for f in self.log_files(m):
+            rel = f.relative_to(self.root).as_posix()
+            note = " (read by the pipeline)" if rel == src else ""
+            text.append(f"| {rel.removeprefix(RAW + '/')}{note} | {size(f.stat().st_size)} | [view]({blob(rel)}) · "
+                        f"[download]({raw_url(rel)}) |")
         text += ["", f"SHA-256 of `{Path(m['source']['file']).name}`: `{m['source']['sha256']}`", ""]
         hdr = {k: v for k, v in m["header"].items() if v not in ("", None)}
         if hdr:
@@ -272,15 +282,19 @@ class Book:
         text = ["# Wind drone", "",
                 "Wind speed, direction and temperature from the wind drone's sensor, recorded as ROS 2 bags "
                 f"([raw_data/{WIND_DIR}]({tree(f'{RAW}/{WIND_DIR}')})). The pipeline reads the CSV export of each bag "
-                "and cuts out the part that overlaps each flight, matching on GPS time.", "",
-                f"| Log | Start ({LOCAL_LABEL}) | End ({LOCAL_LABEL}) | Rows | Recording | Flights covered |",
-                "|---|---|---|---:|---|---|"]
+                "(or the bag itself when there is no export) and cuts out the part that overlaps each flight, matching on "
+                "GPS time.", "",
+                f"| Log | Read from | Start ({LOCAL_LABEL}) | End ({LOCAL_LABEL}) | Rows | Recording | Flights covered |",
+                "|---|---|---|---|---:|---|---|"]
         for lg in logs:
             covered = [m for m in self.metas if m.get("wind") and lg["name"] in m["wind"].get("sources", [])]
             links = ", ".join(f"[{when(m)}](../../experiments/{m['platform']['id']}/{page_id(m)}.md)" for m in covered)
             url = tree(f"{RAW}/{WIND_DIR}/{lg['name']}")
             closed = {True: "complete", False: "⚠️ not closed (file may be cut short)", None: "–"}[lg.get("bag_closed")]
-            text.append(f"| [{lg['name']}]({url}) | {fmt(lg['start_utc'], '%Y-%m-%d %H:%M:%S %Z')} | "
+            if lg.get("unique_rows") == 0:
+                closed = "same data as another log (not used twice)"
+            src_kind = "CSV export" if lg.get("kind") == "csv" else "bag (.mcap)"
+            text.append(f"| [{lg['name']}]({url}) | {src_kind} | {fmt(lg['start_utc'], '%Y-%m-%d %H:%M:%S %Z')} | "
                         f"{fmt(lg['end_utc'], '%H:%M:%S %Z')} | {lg['rows']} | {closed} | {links or 'none'} |")
         self.write("data/raw/wind_drone.md", "\n".join(text))
 
@@ -300,7 +314,7 @@ class Book:
                 "matched on GPS time. The standard columns have the same names and units for every drone and every log "
                 "format; a column the log doesn't have is empty.", "",
                 "## Loading", "", "```python", "import pandas as pd",
-                f'df = pd.read_parquet("{raw_url("processed/Tarot450_20260925_165053Z/flight.parquet")}")',
+                f'df = pd.read_parquet("{raw_url("processed/Tarot450_20260925_104000/flight.parquet")}")',
                 "```", "", "MATLAB: `parquetread(\"flight.parquet\")`. R: `arrow::read_parquet(\"flight.parquet\")`.", "",
                 "## Position and altitude accuracy", "",
                 f"**RTK base.** {RTK_BASE}", "",

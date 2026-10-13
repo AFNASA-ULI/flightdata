@@ -2,11 +2,12 @@
 
 ## A new flight
 
-1. Create a folder under `raw_data/` named after the drone and the offload time, for example
-   `raw_data/Tarot450_20261003_141500Z/`, and copy the logger's CSV into it. Don't edit or re-save the file
-   (opening and saving it in Excel changes it).
-2. Copy any new wind-drone logs into `raw_data/wind_drone/`: the ROS 2 bag folder and its `_csv` export.
-   They are matched to flights by time, so one wind log can cover several flights.
+1. Copy the logger's CSV into the drone's folder, for example `raw_data/Tarot450/`. Don't edit or re-save the
+   file (opening and saving it in Excel changes it). Any folder layout under `raw_data/` works; each flight is
+   named by its drone and Mountain Time start, e.g. `Tarot450_20261009_100644`.
+2. Copy any new wind-drone recordings into `raw_data/wind_drone/`: the ROS 2 bag folder, plus its `_csv`
+   export if you made one (the bag alone is enough). They are matched to flights by time, so one wind log can
+   cover several flights.
    HWAS weather-station exports (`hwas_wx_data_<date>_<time>.csv`) go in `raw_data/hwas_data/`.
 3. Commit and push to `main`.
 

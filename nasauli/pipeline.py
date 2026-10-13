@@ -1,4 +1,9 @@
-"""raw_data/<flight>/ -> processed/<flight>/ (flight + wind tables as Parquet and CSV, metadata.json)."""
+"""raw_data/**/<log>.csv -> processed/<flight_id>/ (flight, wind and HWAS tables as Parquet and CSV, metadata.json).
+
+Every flight log under raw_data/ is processed, whatever the folder layout (one folder per drone, per day or per
+flight). The output folder is named by drone and Mountain Time start (see clean.make_flight_id). Logs that hold
+no autopilot data are skipped and listed in processed/skipped.json.
+"""
 
 from __future__ import annotations
 
@@ -10,10 +15,11 @@ import pandas as pd
 
 from . import __version__
 from .checks import run_checks, summarize
-from .clean import RAW, Session, find_flight_dirs, load_session, raw_logs
+from .clean import Session, all_raw_logs, load_session, raw_logs
 from .schema import FLIGHT_COLUMNS, HWAS_COLUMNS, WIND_COLUMNS
 
 PROCESSED = "processed"
+SKIPPED = "skipped.json"
 
 
 def _sha256(path: Path) -> str:
@@ -73,7 +79,7 @@ def process_session(s: Session, root: Path, prefix: str = "") -> dict:
         "flight_id": s.flight_id,
         "platform": s.info["platform"],
         "reader": s.info["reader"],
-        "source": {"file": f"{RAW}/{s.flight_id}/{s.source.name}", "sha256": _sha256(s.source),
+        "source": {"file": s.info["source_rel"], "sha256": _sha256(s.source),
                    "bytes": s.source.stat().st_size},
         "files": files,
         "header": header,
@@ -95,28 +101,62 @@ def process_session(s: Session, root: Path, prefix: str = "") -> dict:
     return meta
 
 
-def process_flight_dir(flight_dir: Path, root: Path, log=print) -> list[dict]:
-    sessions = []
-    for csv_path in raw_logs(flight_dir):
+def process_logs(paths: list[Path], root: Path, log=print, prune: bool = False) -> list[dict]:
+    """Process the given raw logs. With ``prune``, also remove processed/ folders no log produced any more
+    (after raw data is moved, renamed or deleted) and rewrite processed/skipped.json."""
+    metas, skipped, seen = [], [], {}
+    for csv_path in paths:
+        rel = csv_path.relative_to(root).as_posix()
         s = load_session(csv_path, root)
         if s is None:
-            log(f"  skip {csv_path.name}: no reader for this format")
+            skipped.append({"file": rel, "reason": "No reader for this log format."})
+            log(f"  skip {rel}: no reader for this format")
             continue
-        sessions.append(s)
-    metas = []
-    for s in sessions:
-        meta = process_session(s, root, prefix="" if len(sessions) == 1 else s.stem)
+        if not s.info["has_autopilot_data"]:
+            h = s.info["header"]
+            why = "No autopilot data in this log"
+            if h.get("mavlink_connected", "").lower() == "false":
+                why += " (the logger had no MAVLink connection)"
+            skipped.append({"file": rel, "reason": why + ".", "start_utc": s.flight["time_utc"].min().isoformat()
+                            if s.flight["time_utc"].notna().any() else None})
+            log(f"  skip {rel}: {why}")
+            continue
+        fid = s.flight_id
+        if fid in seen:  # two logs starting in the same second: keep both, distinguished by file name
+            s.info["flight_id"] = fid = f"{fid}_{s.stem}"
+        seen[fid] = rel
+        meta = process_session(s, root)
         n_warn = sum(c["level"] == "warn" for c in meta["checks"])
-        log(f"  {s.source.name} [{meta['reader']}]: {len(s.flight)} rows, {n_warn} warning(s), "
-            f"wind rows {s.wind_info.get('rows', 0)}")
+        log(f"  {rel} -> {fid} [{meta['reader']}]: {len(s.flight)} rows, {n_warn} warning(s), "
+            f"wind rows {s.wind_info.get('rows', 0)}, HWAS rows {s.hwas_info.get('rows', 0)}")
         metas.append(meta)
+    if prune:
+        base = root / PROCESSED
+        for d in sorted(p for p in base.iterdir() if p.is_dir()) if base.is_dir() else []:
+            if d.name not in seen:
+                for f in d.iterdir():
+                    f.unlink()
+                d.rmdir()
+                log(f"  removed stale {PROCESSED}/{d.name}/")
+        base.mkdir(exist_ok=True)
+        (base / SKIPPED).write_text(json.dumps(skipped, indent=2) + "\n")
     return metas
 
 
+def process_flight_dir(flight_dir: Path, root: Path, log=print) -> list[dict]:
+    """Process one folder (or one log file) under raw_data/."""
+    paths = [flight_dir] if flight_dir.is_file() else raw_logs(flight_dir)
+    return process_logs([p.resolve() for p in paths], root.resolve(), log)
+
+
 def process_all(root: Path, log=print) -> None:
-    for d in find_flight_dirs(root):
-        log(d.name)
-        process_flight_dir(d, root, log)
+    root = root.resolve()
+    process_logs(all_raw_logs(root), root, log, prune=True)
+
+
+def load_skipped(root: Path) -> list[dict]:
+    p = root / PROCESSED / SKIPPED
+    return json.loads(p.read_text()) if p.exists() else []
 
 
 def load_all_metadata(root: Path) -> list[dict]:

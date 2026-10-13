@@ -34,4 +34,5 @@ def platform_for(header_platform: str | None, folder_name: str, header_label: st
         "label": label,
         "kind": p.get("kind", ""),
         "description": p.get("description", ""),
+        "short": (p.get("folder_prefixes") or [pid.replace("_", "")])[0],  # used in flight IDs, e.g. Tarot450
     }

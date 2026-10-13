@@ -1,0 +1,17 @@
+[
+  {
+    "file": "raw_data/Tarot450/TAROT_450_20261007T190428Z.csv",
+    "reason": "No autopilot data in this log (the logger had no MAVLink connection).",
+    "start_utc": "2026-10-07T19:11:44.175000+00:00"
+  },
+  {
+    "file": "raw_data/Tarot450/TAROT_450_20261008T013320Z.csv",
+    "reason": "No autopilot data in this log (the logger had no MAVLink connection).",
+    "start_utc": "2026-10-08T01:36:04.838000+00:00"
+  },
+  {
+    "file": "raw_data/Tarot450/TAROT_450_20261008T013712Z.csv",
+    "reason": "No autopilot data in this log (the logger had no MAVLink connection).",
+    "start_utc": "2026-10-08T01:38:08.919000+00:00"
+  }
+]

@@ -14,10 +14,11 @@ the flight controller. Wind data comes from a separate "wind drone" that records
 ## Layout
 
 ```
-raw_data/<flight>/            original flight logs (one folder per flight, named <Drone>_<UTC offload time>)
-raw_data/wind_drone/          wind-drone bags + *_csv exports; one log can cover several flights
+raw_data/<any folders>/       original flight logs, any layout (e.g. raw_data/Tarot450/*.csv, or one folder per flight)
+raw_data/wind_drone/          wind-drone bags (.mcap) + optional *_csv exports; one log can cover several flights
 raw_data/hwas_data/           USAFA mesonet HWAS weather-station CSVs (30 s, Mountain Time); readers/hwas.py
-processed/<flight>/           flight/wind .parquet+.csv, metadata.json; generated, never edit by hand
+processed/<flight_id>/        flight/wind/hwas .parquet+.csv, metadata.json; generated, never edit by hand
+processed/skipped.json        logs that were not processed and why (e.g. no autopilot data)
 nasauli/readers/              one module per raw format -> standard schema (nasauli/schema.py)
 nasauli/platforms.py          drone registry (website groups experiments by drone)
 nasauli/clean.py              local position, wind matching (on GPS-corrected time), airborne detection
@@ -47,6 +48,11 @@ There is no test suite; validate a change by running `process` on all flights an
 - New logger format: add `nasauli/readers/<name>.py` (`NAME`, `sniff`, `read`) and register it in
   `readers/__init__.py`; keep the old readers. The v2 reader looks columns up by name.
 - New drone: add it to `nasauli/platforms.py`.
+- Flight IDs are `<drone short name>_<Mountain Time start>` (e.g. `Tarot450_20260925_104000`), independent of
+  where the log sits under raw_data/. `process` (all flights) prunes processed/ folders no log produces.
+- Logs with no autopilot data (logger had no MAVLink connection) are skipped and listed in skipped.json.
+- Wind-drone recordings are read from their `_csv` export when present, else straight from the .mcap
+  (mcap + mcap-ros2-support, no ROS needed); duplicate rows across sources are dropped.
 - Anything that changes processed outputs: bump `nasauli.__version__`.
 - Generated site pages live only in `_build/`; edit `nasauli/book.py` or `book/`, never the output.
 - Times: data files keep UTC columns plus `time_local`; everything shown to people (site, reports, check
