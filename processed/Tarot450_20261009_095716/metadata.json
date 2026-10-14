@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.6.0",
+  "pipeline_version": "1.7.0",
   "flight_id": "Tarot450_20261009_095716",
   "platform": {
     "id": "TAROT_450",
@@ -120,6 +120,16 @@
         "p5": -3.18,
         "p95": 0.83
       }
+    },
+    "test": {
+      "desired_speeds_m_s": [
+        5,
+        8
+      ],
+      "commanded_alt_m": 25,
+      "payload_g": 0,
+      "battery_mah": 5500,
+      "notes": "5500mah battery, no payload"
     }
   },
   "checks": [
