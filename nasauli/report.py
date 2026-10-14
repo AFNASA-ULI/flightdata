@@ -181,11 +181,13 @@ def render(meta: dict, flight: pd.DataFrame, wind: pd.DataFrame | None,
               f"v{meta['pipeline_version']}, reader <code>{meta['reader']}</code>. Time axis is "
               f"<code>elapsed_s</code>; hover times are GPS-corrected Mountain Time.")
     wind_section = (
-        '<section data-plot="p-wind"><h2>Wind</h2><p class="cap">Speed (left axis): wind drone (line) and HWAS weather '
-        'station (steps, one reading every 30 s; gusts dotted). Direction the wind comes from (right axis, dots). '
-        'Matched to this flight on GPS time.</p><div id="p-wind" class="plot"></div></section>'
-        '<section data-plot="p-temp"><h2>Temperatures</h2><p class="cap">Air (HWAS weather station), wind-drone sensor, '
-        'and battery (Tarot telemetry), °C</p><div id="p-temp" class="plot"></div></section>')
+        '<section data-plot="p-wind"><h2>Wind speed</h2><p class="cap">Wind drone (blue) and HWAS weather station '
+        '(orange steps, one reading every 30 s; gusts red dotted). Matched to this flight on GPS time.</p>'
+        '<div id="p-wind" class="plot"></div></section>'
+        '<section data-plot="p-wdir"><h2>Wind direction</h2><p class="cap">Direction the wind comes from: wind drone '
+        '(blue dots) and HWAS weather station (orange diamonds).</p><div id="p-wdir" class="plot"></div></section>'
+        '<section data-plot="p-temp"><h2>Temperatures</h2><p class="cap">Air (HWAS weather station, orange), wind-drone '
+        'sensor (blue) and battery (Tarot telemetry, red), °C</p><div id="p-temp" class="plot"></div></section>')
     out = TEMPLATE
     for k, v in {
         "__TITLE__": html.escape(title_for(meta)), "__H1__": html.escape(f"{meta['platform']['label']} flight"),
@@ -293,7 +295,7 @@ if(EMBED){document.documentElement.classList.add('embed');
 // Drop panels whose data this log format doesn't have.
 const has=(...ks)=>ks.some(k=>(D[k]||[]).some(v=>v!==null&&v!==0));
 const AVAIL={'p-alt':has('alt'),'p-gs':has('gs','vz'),'p-att':has('roll','pitch'),'p-bat':has('V','I'),'p-mot':has('m1','m2','m3','m4'),
-  'p-vib':has('vx','vy','vzb'),'p-gps':has('fixt'),'p-ekf':has('ev','eph','epv','ec'),'p-wind':!!(W||H),
+  'p-vib':has('vx','vy','vzb'),'p-gps':has('fixt'),'p-ekf':has('ev','eph','epv','ec'),'p-wind':!!(W||H),'p-wdir':!!(W||H),
   'p-temp':has('btemp')||!!(W&&W.temp.some(v=>v!==null))||!!(H&&H.temp.some(v=>v!==null))};
 const FIXN={0:'No GPS',1:'No fix',2:'2D',3:'3D',4:'DGPS',5:'RTK Float',6:'RTK Fixed',7:'Static',8:'PPP'};
 document.querySelectorAll('section[data-plot]').forEach(s=>{if(!AVAIL[s.dataset.plot])s.remove();});
@@ -314,6 +316,31 @@ function base(extra){
 const L=(y,name,c,o)=>Object.assign({x:D.t,y,name,type:'scatter',mode:'lines',line:{color:c,width:1.3}},o||{});
 const hmax=Math.max(5,...D.alt.filter(v=>v!==null));
 let xr=null;
+// Fit every y axis to the data inside the flight's time range once; zooming then changes only the x axis.
+function fitY(traces,lay){
+  const t0=D.t[0],t1=D.t[D.t.length-1];
+  for(const ax of ['yaxis','yaxis2']){
+    const a=lay[ax];if(!a||a.range)continue;
+    const id=ax==='yaxis'?'y':'y2';let lo=Infinity,hi=-Infinity;
+    for(const tr of traces){if((tr.yaxis||'y')!==id||!tr.y||tr.visible===false)continue;
+      for(let i=0;i<tr.y.length;i++){const v=tr.y[i],x=tr.x?tr.x[i]:t0;if(v===null||v===undefined||isNaN(v)||x<t0||x>t1)continue;if(v<lo)lo=v;if(v>hi)hi=v;}}
+    if(!isFinite(lo))continue;
+    if(a.rangemode==='tozero'&&lo>=0)lo=0;
+    const span=Math.max(hi-lo,Math.abs(hi)*0.02,0.1);
+    // a little room below, more above for the flight-mode labels along the top edge
+    a.range=[a.rangemode==='tozero'&&lo===0?0:lo-span*0.06,hi+span*0.14];a.autorange=false;
+  }
+}
+// Wind direction: center the axis on north when the wind is mostly northerly, so readings around 0/360 stay together.
+function dirAxis(){
+  const all=[].concat(W?W.dir:[],H?H.dir:[]).filter(v=>v!==null);
+  const r=Math.PI/180,mx=all.reduce((s,v)=>s+Math.cos(v*r),0),my=all.reduce((s,v)=>s+Math.sin(v*r),0);
+  const mean=(Math.atan2(my,mx)/r+360)%360,north=mean>270||mean<90;
+  const conv=v=>v===null?null:(north&&v>180?v-360:v);
+  const names={'-180':'S','-135':'SW','-90':'W','-45':'NW',0:'N',45:'NE',90:'E',135:'SE',180:'S',225:'SW',270:'W',315:'NW',360:'N'};
+  const lo0=north?-180:0,hi0=north?180:360,ticks=[];for(let v=lo0;v<=hi0;v+=45)ticks.push(v);
+  return {conv,ticks,text:ticks.map(v=>`${names[v]} ${(v+360)%360}°`),lo0,hi0};
+}
 // Mean wind as an arrow in the ground track's top-left corner, pointing downwind (direction is "from").
 function windArrow(){
   const S=(W&&W.mean_spd!=null)?W:(H&&H.mean_spd!=null?H:null);
@@ -330,7 +357,7 @@ function windArrow(){
 }
 const PR=(...a)=>Plotly.react(...a);
 function draw(){
-  const react=(id,...a)=>{if(document.getElementById(id))return PR(id,...a);};
+  const react=(id,tr,lay,...a)=>{if(!document.getElementById(id))return;if(TS.includes(id))fitY(tr,lay);return PR(id,tr,lay,...a);};
   const c1=css('--c1'),c2=css('--c2'),c3=css('--c3'),c4=css('--c4');
   const tr={x:D.E,y:D.N,type:'scatter',mode:'markers',name:'track',marker:{size:3,color:D.t,colorscale:'Viridis',showscale:true,colorbar:{title:{text:'s',font:{color:css('--muted')}},thickness:10,tickfont:{color:css('--muted')},len:.8}},
     customdata:D.t.map((t,i)=>[t,D.alt[i],D.gs[i]]),hovertemplate:'t %{customdata[0]:.1f} s<br>E %{x:.1f} m, N %{y:.1f} m<br>alt %{customdata[1]:.1f} m, gs %{customdata[2]:.1f} m/s<extra></extra>'};
@@ -383,17 +410,24 @@ function draw(){
        yaxis2:axis({title:{text:'sats'},overlaying:'y',side:'right',showgrid:false,rangemode:'tozero'}),margin:{l:80,r:56,t:30,b:36}}),cfg);
   react('p-ekf',[L(D.ev,'velocity',c1),L(D.eph,'pos horiz',c3),L(D.epv,'pos vert',c2),L(D.ec,'compass',c4)],
     B({yaxis:axis({title:{text:'variance'},rangemode:'tozero'}),shapes:base().shapes.concat([{type:'line',xref:'paper',x0:0,x1:1,y0:.8,y1:.8,line:{color:c4,width:1,dash:'dot'}}])}),cfg);
+  // Colors by source, the same in every wind/temperature panel: wind drone c1 (blue), HWAS c2 (orange), gust/battery c4 (red).
   const wt=[];
-  if(W)wt.push({x:W.t,y:W.spd,name:'wind drone',type:'scatter',mode:'lines',line:{color:c1,width:1.3}},
-      {x:W.t,y:W.dir,name:'wind drone dir',type:'scatter',mode:'markers',yaxis:'y2',marker:{color:c1,size:3,opacity:.5},showlegend:false});
-  if(H)wt.push({x:H.t,y:H.spd,name:'HWAS',type:'scatter',mode:'lines+markers',line:{color:c3,width:2.2,shape:'hv'},marker:{size:5}},
-      {x:H.t,y:H.gust,name:'HWAS gust',type:'scatter',mode:'lines',line:{color:c3,width:1.2,dash:'dot',shape:'hv'},connectgaps:false},
-      {x:H.t,y:H.dir,name:'HWAS dir',type:'scatter',mode:'markers',yaxis:'y2',marker:{color:c3,size:6,symbol:'diamond'},showlegend:false});
-  if(wt.length)react('p-wind',wt,B({yaxis:axis({title:{text:'m/s'},rangemode:'tozero'}),
-    yaxis2:axis({title:{text:'from [deg]'},overlaying:'y',side:'right',showgrid:false,range:[0,360],dtick:90})}),cfg);
+  if(W)wt.push({x:W.t,y:W.spd,name:'wind drone',type:'scatter',mode:'lines',line:{color:c1,width:1.4}});
+  if(H)wt.push({x:H.t,y:H.spd,name:'HWAS',type:'scatter',mode:'lines+markers',line:{color:c2,width:2.4,shape:'hv'},marker:{size:6}},
+      {x:H.t,y:H.gust,name:'HWAS gust',type:'scatter',mode:'lines',line:{color:c4,width:1.6,dash:'dot',shape:'hv'},connectgaps:false});
+  if(wt.length)react('p-wind',wt,B({yaxis:axis({title:{text:'m/s'},rangemode:'tozero'})}),cfg);
+  if(W||H){const da=dirAxis(),dt=[];
+    if(W)dt.push({x:W.t,y:W.dir.map(da.conv),customdata:W.dir,name:'wind drone',type:'scatter',mode:'markers',
+      marker:{color:c1,size:4,opacity:.7},hovertemplate:'%{customdata}°<extra>wind drone</extra>'});
+    if(H)dt.push({x:H.t,y:H.dir.map(da.conv),customdata:H.dir,name:'HWAS',type:'scatter',mode:'markers',
+      marker:{color:c2,size:9,symbol:'diamond',line:{color:css('--panel'),width:1}},hovertemplate:'%{customdata}°<extra>HWAS</extra>'});
+    // fit to the data, then widen to whole 45° ticks within the full circle
+    const lay=B({yaxis:axis({tickvals:da.ticks,ticktext:da.text})});fitY(dt,lay);
+    if(lay.yaxis.range){lay.yaxis.range=[Math.max(da.lo0,Math.floor((lay.yaxis.range[0]-5)/45)*45),Math.min(da.hi0,Math.ceil((lay.yaxis.range[1]+5)/45)*45)];}
+    react('p-wdir',dt,lay,cfg);}
   const tt=[];
-  if(H)tt.push({x:H.t,y:H.temp,name:'air (HWAS)',type:'scatter',mode:'lines+markers',line:{color:c3,width:2.2,shape:'hv'},marker:{size:5}});
-  if(W)tt.push({x:W.t,y:W.temp,name:'wind-drone sensor',type:'scatter',mode:'lines',line:{color:c1,width:1.3}});
+  if(H)tt.push({x:H.t,y:H.temp,name:'air (HWAS)',type:'scatter',mode:'lines+markers',line:{color:c2,width:2.4,shape:'hv'},marker:{size:6}});
+  if(W)tt.push({x:W.t,y:W.temp,name:'wind-drone sensor',type:'scatter',mode:'lines',line:{color:c1,width:1.4}});
   if(has('btemp'))tt.push(L(D.btemp,'battery',c4,{line:{color:c4,width:1.6}}));
   if(tt.length)react('p-temp',tt,B({yaxis:axis({title:{text:'°C'}})}),cfg);
 }
