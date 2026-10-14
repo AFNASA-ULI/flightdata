@@ -5,6 +5,9 @@
 1. Copy the logger's CSV into the drone's folder, for example `raw_data/Tarot450/`. Don't edit or re-save the
    file (opening and saving it in Excel changes it). Any folder layout under `raw_data/` works; each flight is
    named by its drone and Mountain Time start, e.g. `Tarot450_20261009_100644`.
+   If the Pi logger missed the autopilot (no MAVLink connection), add the autopilot's own log instead: the
+   Mission Planner CSV export of the .BIN log, zipped as it comes (e.g. `2026-10-07_11-58-05_log-491172.zip`),
+   in the drone's folder. It is split into one flight per arm/disarm.
 2. Copy any new wind-drone recordings into `raw_data/wind_drone/`: the ROS 2 bag folder, plus its `_csv`
    export if you made one (the bag alone is enough). They are matched to flights by time, so one wind log can
    cover several flights.

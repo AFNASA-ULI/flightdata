@@ -64,5 +64,7 @@ page. The remaining raw logger columns follow under their original names.
 ## Log formats
 
 Each log format has a reader in `nasauli/readers/` that converts it to the standard schema:
-`session_v2` (`# nasauli session log v2.x`) and `legacy_v1` (the April 2026 logger). When the logger format
+`session_v2` (`# nasauli session log v2.x`), `legacy_v1` (the April 2026 logger) and `ardupilot_csv` (the
+autopilot's own DataFlash log exported to CSV, zipped; used when the Pi logger had no MAVLink connection, e.g.
+7 Oct 2026; one log can hold several flights). When the logger format
 changes, add a reader and keep the old ones. Every output records the pipeline version and reader used.

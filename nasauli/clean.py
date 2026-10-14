@@ -18,7 +18,7 @@ import pandas as pd
 
 from .localtime import series_to_local
 from .platforms import platform_for
-from .readers import hwas, reader_for, wind_ros2
+from .readers import ardupilot_csv, hwas, read_sessions, reader_for, wind_ros2
 
 RAW = "raw_data"
 WIND_DIR = "wind_drone"
@@ -179,11 +179,20 @@ def has_autopilot_data(df: pd.DataFrame) -> bool:
     return bool(df[["lat_deg", "roll_deg", "alt_rel_m"]].notna().any().any())
 
 
-def load_session(csv_path: Path, root: Path) -> Session | None:
-    reader = reader_for(csv_path)
+def load_sessions(path: Path, root: Path) -> list[Session] | None:
+    """All flights in one raw log (None if no reader understands it)."""
+    reader = reader_for(path)
     if reader is None:
         return None
-    df, info = reader.read(csv_path)
+    return [_make_session(path, root, df, info) for df, info in read_sessions(reader, path)]
+
+
+def load_session(path: Path, root: Path) -> Session | None:
+    sessions = load_sessions(path, root)
+    return sessions[0] if sessions else None
+
+
+def _make_session(csv_path: Path, root: Path, df: pd.DataFrame, info: dict) -> Session:
     df["time_local"] = series_to_local(df["time_gps_utc"])
     info["home"] = add_local_position(df)
     h = info["header"]
@@ -216,8 +225,13 @@ def find_flight_dirs(root: Path) -> list[Path]:
 
 
 def raw_logs(flight_dir: Path) -> list[Path]:
-    """Flight logs in a folder and its subfolders (hand-edited ``*_Fixed`` copies excluded)."""
-    return sorted(p for p in flight_dir.rglob("*.csv") if not p.stem.endswith("_Fixed"))
+    """Flight logs in a folder and its subfolders: CSV logs (hand-edited ``*_Fixed`` copies excluded), and
+    autopilot logs exported as one CSV per message, either zipped or as a folder (counted as one log)."""
+    export_dirs = sorted(d for d in [flight_dir, *flight_dir.rglob("*")] if ardupilot_csv.is_export_dir(d))
+    inside = lambda p: any(d == p.parent or d in p.parents for d in export_dirs)
+    csvs = [p for p in flight_dir.rglob("*.csv") if not p.stem.endswith("_Fixed") and not inside(p)]
+    zips = [p for p in flight_dir.rglob("*.zip") if ardupilot_csv.sniff(p)]
+    return sorted(csvs + zips + export_dirs)
 
 
 def all_raw_logs(root: Path) -> list[Path]:

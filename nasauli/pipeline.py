@@ -15,7 +15,7 @@ import pandas as pd
 
 from . import __version__
 from .checks import run_checks, summarize
-from .clean import Session, all_raw_logs, load_session, raw_logs
+from .clean import Session, all_raw_logs, load_sessions, raw_logs
 from .schema import FLIGHT_COLUMNS, HWAS_COLUMNS, WIND_COLUMNS
 
 PROCESSED = "processed"
@@ -23,11 +23,20 @@ SKIPPED = "skipped.json"
 
 
 def _sha256(path: Path) -> str:
+    """SHA-256 of a file, or of a folder's files (name and content, in sorted order)."""
     h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(1 << 20), b""):
-            h.update(chunk)
+    files = sorted(p for p in path.rglob("*") if p.is_file()) if path.is_dir() else [path]
+    for p in files:
+        if path.is_dir():
+            h.update(p.relative_to(path).as_posix().encode() + b"\0")
+        with open(p, "rb") as f:
+            for chunk in iter(lambda: f.read(1 << 20), b""):
+                h.update(chunk)
     return h.hexdigest()
+
+
+def _size(path: Path) -> int:
+    return sum(p.stat().st_size for p in path.rglob("*") if p.is_file()) if path.is_dir() else path.stat().st_size
 
 
 def _write_table(df: pd.DataFrame, base: Path) -> None:
@@ -80,7 +89,7 @@ def process_session(s: Session, root: Path, prefix: str = "") -> dict:
         "platform": s.info["platform"],
         "reader": s.info["reader"],
         "source": {"file": s.info["source_rel"], "sha256": _sha256(s.source),
-                   "bytes": s.source.stat().st_size},
+                   "bytes": _size(s.source)},
         "files": files,
         "header": header,
         "summary": summary,
@@ -101,35 +110,41 @@ def process_session(s: Session, root: Path, prefix: str = "") -> dict:
     return meta
 
 
+def _process_one(s: Session, rel: str, root: Path, log, metas: list, skipped: list, seen: dict) -> None:
+    """Process one flight, or record why it is skipped."""
+    if not s.info["has_autopilot_data"]:
+        h = s.info["header"]
+        why = "No autopilot data in this log"
+        if h.get("mavlink_connected", "").lower() == "false":
+            why += " (the logger had no MAVLink connection)"
+        skipped.append({"file": rel, "reason": why + ".", "start_utc": s.flight["time_utc"].min().isoformat()
+                        if s.flight["time_utc"].notna().any() else None})
+        log(f"  skip {rel}: {why}")
+        return
+    fid = s.flight_id
+    if fid in seen:  # two logs starting in the same second: keep both, distinguished by file name
+        s.info["flight_id"] = fid = f"{fid}_{s.stem}"
+    seen[fid] = rel
+    meta = process_session(s, root)
+    n_warn = sum(c["level"] == "warn" for c in meta["checks"])
+    log(f"  {rel} -> {fid} [{meta['reader']}]: {len(s.flight)} rows, {n_warn} warning(s), "
+        f"wind rows {s.wind_info.get('rows', 0)}, HWAS rows {s.hwas_info.get('rows', 0)}")
+    metas.append(meta)
+
+
 def process_logs(paths: list[Path], root: Path, log=print, prune: bool = False) -> list[dict]:
     """Process the given raw logs. With ``prune``, also remove processed/ folders no log produced any more
     (after raw data is moved, renamed or deleted) and rewrite processed/skipped.json."""
     metas, skipped, seen = [], [], {}
     for csv_path in paths:
         rel = csv_path.relative_to(root).as_posix()
-        s = load_session(csv_path, root)
-        if s is None:
+        sessions = load_sessions(csv_path, root)
+        if sessions is None:
             skipped.append({"file": rel, "reason": "No reader for this log format."})
             log(f"  skip {rel}: no reader for this format")
             continue
-        if not s.info["has_autopilot_data"]:
-            h = s.info["header"]
-            why = "No autopilot data in this log"
-            if h.get("mavlink_connected", "").lower() == "false":
-                why += " (the logger had no MAVLink connection)"
-            skipped.append({"file": rel, "reason": why + ".", "start_utc": s.flight["time_utc"].min().isoformat()
-                            if s.flight["time_utc"].notna().any() else None})
-            log(f"  skip {rel}: {why}")
-            continue
-        fid = s.flight_id
-        if fid in seen:  # two logs starting in the same second: keep both, distinguished by file name
-            s.info["flight_id"] = fid = f"{fid}_{s.stem}"
-        seen[fid] = rel
-        meta = process_session(s, root)
-        n_warn = sum(c["level"] == "warn" for c in meta["checks"])
-        log(f"  {rel} -> {fid} [{meta['reader']}]: {len(s.flight)} rows, {n_warn} warning(s), "
-            f"wind rows {s.wind_info.get('rows', 0)}, HWAS rows {s.hwas_info.get('rows', 0)}")
-        metas.append(meta)
+        for s in sessions:
+            _process_one(s, rel, root, log, metas, skipped, seen)
     if prune:
         base = root / PROCESSED
         for d in sorted(p for p in base.iterdir() if p.is_dir()) if base.is_dir() else []:

@@ -9,9 +9,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from . import hwas, legacy_v1, session_v2, wind_ros2
+from . import ardupilot_csv, hwas, legacy_v1, session_v2, wind_ros2
 
-FLIGHT_READERS = [session_v2, legacy_v1]
+FLIGHT_READERS = [session_v2, legacy_v1, ardupilot_csv]
 
 
 def reader_for(path: Path):
@@ -22,4 +22,12 @@ def reader_for(path: Path):
     return None
 
 
-__all__ = ["FLIGHT_READERS", "reader_for", "hwas", "legacy_v1", "session_v2", "wind_ros2"]
+def read_sessions(reader, path: Path):
+    """[(df, info), ...]: one entry per flight. Most formats hold one flight per file."""
+    if hasattr(reader, "read_sessions"):
+        return reader.read_sessions(path)
+    return [reader.read(path)]
+
+
+__all__ = ["FLIGHT_READERS", "reader_for", "read_sessions", "ardupilot_csv", "hwas", "legacy_v1", "session_v2",
+           "wind_ros2"]

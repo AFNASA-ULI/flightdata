@@ -52,6 +52,10 @@ There is no test suite; validate a change by running `process` on all flights an
 - Flight IDs are `<drone short name>_<Mountain Time start>` (e.g. `Tarot450_20260925_104000`), independent of
   where the log sits under raw_data/. `process` (all flights) prunes processed/ folders no log produces.
 - Logs with no autopilot data (logger had no MAVLink connection) are skipped and listed in skipped.json.
+- Autopilot (Cube Orange+) DataFlash logs exported to one CSV per message (Mission Planner), kept zipped as
+  received or as a folder, are read by `readers/ardupilot_csv.py` (used for 2026-10-07, when the Pi had no
+  MAVLink). One log is split into flights at ARM/disarm (cut at the logging pause between flights); time is
+  from GPS week/ms; ~6.7 Hz; BAT.Temp 0 = no sensor. A reader may return several flights (`read_sessions`).
 - Wind-drone recordings are read from their `_csv` export when present, else straight from the .mcap
   (mcap + mcap-ros2-support, no ROS needed); duplicate rows across sources are dropped. `nasauli/bagtools.py`
   reproduces the team's ROS 2 CSV export byte-for-byte and the recorder's metadata.yaml (validated on the
