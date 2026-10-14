@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.6.0",
+  "pipeline_version": "1.7.0",
   "flight_id": "Tarot450_20260408_105711",
   "platform": {
     "id": "TAROT_450",
@@ -61,7 +61,8 @@
       "fix": [],
       "home_msl_m": 2160.18,
       "home_msl_source": "EKF (approximate)"
-    }
+    },
+    "test": {}
   },
   "checks": [
     {

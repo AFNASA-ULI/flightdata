@@ -21,6 +21,7 @@ processed/<flight_id>/        flight/wind/hwas .parquet+.csv, metadata.json; gen
 processed/skipped.json        logs that were not processed and why (e.g. no autopilot data)
 nasauli/readers/              one module per raw format -> standard schema (nasauli/schema.py)
 nasauli/platforms.py          drone registry (website groups experiments by drone)
+nasauli/annotations.py        per-flight trims (keep_s on elapsed_s) and overrides of desired speeds / payload
 nasauli/clean.py              local position, wind matching (on GPS-corrected time), airborne detection
 nasauli/checks.py             summary numbers + data-quality findings
 nasauli/pipeline.py           raw_data -> processed
@@ -60,6 +61,9 @@ There is no test suite; validate a change by running `process` on all flights an
   (mcap + mcap-ros2-support, no ROS needed); duplicate rows across sources are dropped. `nasauli/bagtools.py`
   reproduces the team's ROS 2 CSV export byte-for-byte and the recorder's metadata.yaml (validated on the
   complete 2026-10-07/09 bags); it was used to rebuild wind_drone_20261009_100606 (unclosed, empty metadata).
+- Desired speeds come from the header's `commanded_speed_ms`, payload from `notes` ("360g payload", "no payload");
+  `annotations.py` overrides them and trims parts of a log the team says are not part of the test. A trim keeps
+  the flight ID (from the raw log start), the original elapsed_s, and the home/RTK elevation from the whole log.
 - Anything that changes processed outputs: bump `nasauli.__version__`.
 - Generated site pages live only in `_build/`; edit `nasauli/book.py` or `book/`, never the output.
 - Times: data files keep UTC columns plus `time_local`; everything shown to people (site, reports, check

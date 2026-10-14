@@ -85,11 +85,23 @@ def stat_tiles(meta: dict, wind: pd.DataFrame | None,
     sm = meta["summary"]
     tiles = []
     if sm.get("airborne_s") is not None:
+        start = (f"from {sm['takeoff_s']:.0f} s (earlier data removed)" if sm.get("starts_airborne")
+                 else f"takeoff ≈{sm['takeoff_s']:.0f} s")
         tiles.append(("Flight", f"≈{sm['airborne_s']:.0f} s airborne",
-                      f"takeoff ≈{sm['takeoff_s']:.0f} s, landed ≈{sm['landing_s']:.0f} s"
-                      if sm.get("landed_in_log") else f"takeoff ≈{sm['takeoff_s']:.0f} s, log ends airborne"))
+                      f"{start}, landed ≈{sm['landing_s']:.0f} s"
+                      if sm.get("landed_in_log") else f"{start}, log ends airborne"))
     else:
         tiles.append(("Flight", "not airborne", f"{sm['duration_s']:.0f} s logged"))
+    test = sm.get("test") or {}
+    if test.get("desired_speeds_m_s"):
+        sp = test["desired_speeds_m_s"]
+        tiles.append(("Desired speed" + ("s" if len(sp) > 1 else ""),
+                      " & ".join(f"{v:g}" for v in sp) + " m/s",
+                      f"commanded, at {test['commanded_alt_m']:g} m altitude" if test.get("commanded_alt_m")
+                      else "commanded"))
+    if "payload_g" in test:
+        tiles.append(("Payload", f"{test['payload_g']:g} g" if test["payload_g"] else "none",
+                      f"{test['battery_mah']} mAh battery" if test.get("battery_mah") else "from the log header"))
     dur: dict[str, float] = {}
     for a, b, m in sm["modes"]:
         if m != "—":
@@ -104,8 +116,12 @@ def stat_tiles(meta: dict, wind: pd.DataFrame | None,
     tiles.append(("Max range", _fmt(sm.get("max_range_m"), " m", 0),
                   f"from home; max alt {_fmt(sm.get('max_alt_rel_m'), ' m')}"))
     if sm.get("batt_consumed_mah") is not None:
-        bsub = f"{_fmt(sm.get('batt_v_start'), ' V')} → {_fmt(sm.get('batt_v_end'), ' V')}"
-        bsub += " at rest" if sm.get("batt_v_end_at_rest") else " (end not at rest)"
+        bsub = f"{_fmt(sm.get('batt_v_start'), ' V')}" + (" in flight" if sm.get("starts_airborne") else "")
+        bsub += f" → {_fmt(sm.get('batt_v_end'), ' V')}"
+        if sm.get("starts_airborne"):
+            bsub += " at rest" if sm.get("batt_v_end_at_rest") else " in flight"
+        else:
+            bsub += " at rest" if sm.get("batt_v_end_at_rest") else " (end not at rest)"
         if sm.get("cruise_current_a") is not None:
             bsub += f", ≈{sm['cruise_current_a']:.0f} A cruise"
         tiles.append(("Battery", _fmt(sm.get("batt_consumed_mah"), " mAh", 0), bsub))

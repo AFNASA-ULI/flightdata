@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.6.0",
+  "pipeline_version": "1.7.0",
   "flight_id": "Tarot450_20261009_101730",
   "platform": {
     "id": "TAROT_450",
@@ -62,88 +62,70 @@
     "session_id": "TAROT_450_20261009T161713Z",
     "platform": "Tarot 450",
     "platform_id": "TAROT_450",
-    "start_utc": "2026-10-09T16:17:30.170000+00:00",
+    "start_utc": "2026-10-09T16:22:10.170000+00:00",
     "end_utc": "2026-10-09T16:27:00.920000+00:00",
-    "start_local": "2026-10-09T10:17:30.897278948-06:00",
+    "start_local": "2026-10-09T10:22:10.897278948-06:00",
     "end_local": "2026-10-09T10:27:01.647278948-06:00",
-    "duration_s": 570.8,
-    "samples": 11406,
-    "sample_rate_hz": 19.98,
+    "duration_s": 290.8,
+    "samples": 5807,
+    "sample_rate_hz": 19.97,
     "modes": [
       [
-        0.0,
-        206.15,
-        "RTL"
-      ],
-      [
-        206.15,
-        210.8,
-        "ALT_HOLD"
-      ],
-      [
-        210.8,
-        216.7,
-        "AUTO"
-      ],
-      [
-        216.7,
-        243.0,
-        "RTL"
-      ],
-      [
-        243.0,
+        280.0,
         570.75,
         "AUTO"
       ]
     ],
-    "takeoff_s": 212.8,
+    "takeoff_s": 280.0,
     "landing_s": 560.3,
-    "airborne_s": 347.5,
+    "airborne_s": 280.3,
     "landed_in_log": true,
-    "max_alt_rel_m": 37.8,
+    "max_alt_rel_m": 25.6,
     "max_range_m": 300.0,
     "cruise_alt_m": 25.0,
     "cruise_speed_m_s": 5.0,
-    "cruise_current_a": 16.8,
-    "mission_items": 9,
-    "rtl_s": 216.7,
-    "batt_consumed_mah": 1634.0,
-    "batt_v_start": 16.55,
+    "cruise_current_a": 17.0,
+    "mission_items": 7,
+    "rtl_s": null,
+    "batt_consumed_mah": 1308.0,
+    "batt_v_start": 14.85,
     "batt_v_end": 15.1,
     "batt_v_end_at_rest": true,
     "gps": {
       "basis": "airborne",
       "sats_min": 32.0,
-      "hdop_max": 0.83,
+      "hdop_max": 0.79,
       "fix": [
         {
           "type": 6,
           "name": "RTK Fixed",
           "accuracy": "cm-level vs. base",
-          "pct": 93.1
-        },
-        {
-          "type": 5,
-          "name": "RTK Float",
-          "accuracy": "~0.2\u20131 m vs. base",
-          "pct": 6.9
+          "pct": 100.0
         }
       ],
       "home_msl_m": 2162.49,
       "home_msl_source": "EKF (approximate)"
+    },
+    "trim": {
+      "keep_from_s": 280.0,
+      "keep_to_s": null,
+      "reason": "not part of the test",
+      "rows_raw": 11406,
+      "rows_kept": 5807
+    },
+    "starts_airborne": true,
+    "test": {
+      "desired_speeds_m_s": [
+        5,
+        8
+      ],
+      "commanded_alt_m": 25,
+      "payload_g": 360,
+      "battery_mah": 5500,
+      "notes": "5500mah battery, 360g payload"
     }
   },
   "checks": [
-    {
-      "level": "warn",
-      "title": "High compass variance",
-      "detail": "EKF compass variance peaks at 1.82 (t = 215.8 s). ArduPilot's default failsafe threshold is 0.8."
-    },
-    {
-      "level": "warn",
-      "title": "Accelerometer clipping",
-      "detail": "Clip counters increased during the log: clip_2 +35"
-    },
     {
       "level": "info",
       "title": "No HWAS weather-station data",
@@ -152,17 +134,17 @@
     {
       "level": "info",
       "title": "HB_Armed mixes heartbeats from several MAVLink components",
-      "detail": "The raw HB_Armed column flips 708 times. The cleaned armed column only uses autopilot heartbeats (base_mode bit 0 set) and changes 2 times. The logger should filter heartbeats to the autopilot's sysid/compid."
+      "detail": "The raw HB_Armed column flips 708 times. The cleaned armed column only uses autopilot heartbeats (base_mode bit 0 set) and changes 1 time. The logger should filter heartbeats to the autopilot's sysid/compid."
     },
     {
       "level": "info",
-      "title": "RTK fix not held for the whole flight",
-      "detail": "RTK Fixed (cm-level vs. base) for 93% of the airborne time; the rest was RTK Float 7% (~0.2\u20131 m vs. base). Positions in those stretches are less accurate; the GPS panel shows when."
+      "title": "Part of the log removed",
+      "detail": "Data before 280 s (elapsed time) is left out of the processed data and plots (not part of the test). 5807 of 11406 samples kept; the raw log is complete."
     },
     {
       "level": "info",
       "title": "Logger skipped samples",
-      "detail": "10 scheduled sample slot(s) were skipped."
+      "detail": "9 scheduled sample slot(s) were skipped."
     }
   ],
   "home": {
@@ -179,10 +161,10 @@
     "ap_wind_speed_z_m_s"
   ],
   "wind": {
-    "flight_start_gps_utc": "2026-10-09T16:17:30.897278948+00:00",
+    "flight_start_gps_utc": "2026-10-09T16:22:10.897278948+00:00",
     "flight_end_gps_utc": "2026-10-09T16:27:01.647278948+00:00",
     "margin_s": 5.0,
-    "rows": 2904,
+    "rows": 1504,
     "coverage_pct": 100.0,
     "sources": [
       "wind_drone_20261009_100606_csv"

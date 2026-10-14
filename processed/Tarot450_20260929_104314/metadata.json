@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.6.0",
+  "pipeline_version": "1.7.0",
   "flight_id": "Tarot450_20260929_104314",
   "platform": {
     "id": "TAROT_450",
@@ -115,6 +115,12 @@
         "p5": 1.76,
         "p95": 5.23
       }
+    },
+    "test": {
+      "desired_speeds_m_s": [
+        5
+      ],
+      "commanded_alt_m": 25
     }
   },
   "checks": [

@@ -16,6 +16,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from .annotations import for_flight
 from .localtime import series_to_local
 from .platforms import platform_for
 from .readers import ardupilot_csv, hwas, read_sessions, reader_for, wind_ros2
@@ -175,6 +176,22 @@ def make_flight_id(platform: dict, df: pd.DataFrame, stem: str) -> str:
     return f"{platform['short']}_{t.min():%Y%m%d_%H%M%S}" if len(t) else stem
 
 
+def apply_keep(df: pd.DataFrame, keep: tuple, reason: str) -> tuple[pd.DataFrame, dict]:
+    """Drop samples outside ``keep`` (elapsed_s). Home position and the RTK takeoff elevation are taken from
+    the whole log first, so a cut that removes the takeoff does not move them."""
+    from .checks import height_check
+    lo, hi = keep
+    t = df["elapsed_s"]
+    mask = pd.Series(True, index=df.index)
+    if lo is not None:
+        mask &= t >= lo
+    if hi is not None:
+        mask &= t <= hi
+    info = {"keep_from_s": lo, "keep_to_s": hi, "reason": reason, "rows_raw": int(len(df)),
+            "rows_kept": int(mask.sum()), "height_full_log": height_check(df, airborne(df))}
+    return df[mask].reset_index(drop=True), info
+
+
 def has_autopilot_data(df: pd.DataFrame) -> bool:
     return bool(df[["lat_deg", "roll_deg", "alt_rel_m"]].notna().any().any())
 
@@ -200,6 +217,9 @@ def _make_session(csv_path: Path, root: Path, df: pd.DataFrame, info: dict) -> S
     info["flight_id"] = make_flight_id(info["platform"], df, csv_path.stem)
     info["source_rel"] = csv_path.relative_to(root).as_posix()
     info["has_autopilot_data"] = has_autopilot_data(df)
+    note = for_flight(info["flight_id"])
+    if note.get("keep_s") and info["has_autopilot_data"]:
+        df, info["trim"] = apply_keep(df, note["keep_s"], note.get("keep_reason", ""))
     sess = Session(source=csv_path, flight=df, info=info)
     if not info["has_autopilot_data"]:
         return sess

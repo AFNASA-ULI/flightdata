@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.6.0",
+  "pipeline_version": "1.7.0",
   "flight_id": "Tarot450_20261009_100644",
   "platform": {
     "id": "TAROT_450",
@@ -63,12 +63,12 @@
     "platform": "Tarot 450",
     "platform_id": "TAROT_450",
     "start_utc": "2026-10-09T16:06:44.124000+00:00",
-    "end_utc": "2026-10-09T16:17:04.874000+00:00",
+    "end_utc": "2026-10-09T16:11:24.124000+00:00",
     "start_local": "2026-10-09T10:06:44.869891809-06:00",
-    "end_local": "2026-10-09T10:17:05.619891809-06:00",
-    "duration_s": 620.8,
-    "samples": 12402,
-    "sample_rate_hz": 19.98,
+    "end_local": "2026-10-09T10:11:24.869891809-06:00",
+    "duration_s": 280.0,
+    "samples": 5601,
+    "sample_rate_hz": 20.0,
     "modes": [
       [
         0.0,
@@ -82,23 +82,8 @@
       ],
       [
         23.85,
-        559.8,
+        280.0,
         "AUTO"
-      ],
-      [
-        559.8,
-        562.05,
-        "STABILIZE"
-      ],
-      [
-        562.05,
-        562.15,
-        "POSHOLD"
-      ],
-      [
-        562.15,
-        620.75,
-        "RTL"
       ]
     ],
     "takeoff_s": 25.9,
@@ -111,10 +96,10 @@
     "cruise_speed_m_s": 10.8,
     "cruise_current_a": 11.2,
     "mission_items": 9,
-    "rtl_s": 562.1,
-    "batt_consumed_mah": 1811.0,
+    "rtl_s": null,
+    "batt_consumed_mah": 761.0,
     "batt_v_start": 15.54,
-    "batt_v_end": 15.06,
+    "batt_v_end": 14.97,
     "batt_v_end_at_rest": true,
     "gps": {
       "basis": "airborne",
@@ -135,6 +120,24 @@
         "p5": -1.63,
         "p95": 3.54
       }
+    },
+    "trim": {
+      "keep_from_s": null,
+      "keep_to_s": 280.0,
+      "reason": "not part of the test",
+      "rows_raw": 12402,
+      "rows_kept": 5601
+    },
+    "starts_airborne": false,
+    "test": {
+      "desired_speeds_m_s": [
+        11,
+        14
+      ],
+      "commanded_alt_m": 25,
+      "payload_g": 0,
+      "battery_mah": 5500,
+      "notes": "5500mah battery, no payload"
     }
   },
   "checks": [
@@ -142,11 +145,6 @@
       "level": "warn",
       "title": "High compass variance",
       "detail": "EKF compass variance peaks at 1.51 (t = 24.8 s). ArduPilot's default failsafe threshold is 0.8."
-    },
-    {
-      "level": "warn",
-      "title": "Accelerometer clipping",
-      "detail": "Clip counters increased during the log: clip_2 +6"
     },
     {
       "level": "info",
@@ -160,13 +158,13 @@
     },
     {
       "level": "info",
-      "title": "Barometric altitude differs from RTK height",
-      "detail": "alt_rel_m (EKF, barometer-based) minus the RTK GPS height above takeoff: median -0.3 m, 5\u201395% range -1.6 to +3.5 m in flight. For precise height use gps_alt_m while the fix is RTK Fixed."
+      "title": "Part of the log removed",
+      "detail": "Data after 280 s (elapsed time) is left out of the processed data and plots (not part of the test). 5601 of 12402 samples kept; the raw log is complete."
     },
     {
       "level": "info",
-      "title": "Logger skipped samples",
-      "detail": "14 scheduled sample slot(s) were skipped."
+      "title": "Barometric altitude differs from RTK height",
+      "detail": "alt_rel_m (EKF, barometer-based) minus the RTK GPS height above takeoff: median -0.3 m, 5\u201395% range -1.6 to +3.5 m in flight. For precise height use gps_alt_m while the fix is RTK Fixed."
     }
   ],
   "home": {
@@ -184,9 +182,9 @@
   ],
   "wind": {
     "flight_start_gps_utc": "2026-10-09T16:06:44.869891809+00:00",
-    "flight_end_gps_utc": "2026-10-09T16:17:05.619891809+00:00",
+    "flight_end_gps_utc": "2026-10-09T16:11:24.869891809+00:00",
     "margin_s": 5.0,
-    "rows": 3154,
+    "rows": 1450,
     "coverage_pct": 100.0,
     "sources": [
       "wind_drone_20261009_100606_csv"

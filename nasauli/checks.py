@@ -7,6 +7,7 @@ import re
 import numpy as np
 import pandas as pd
 
+from .annotations import for_flight
 from .clean import Session, airborne, armed_or_unknown
 from .localtime import fmt
 from .schema import FLIGHT_COLUMNS, GPS_FIX_TYPES
@@ -79,6 +80,48 @@ def summarize(s: Session) -> dict:
     out["batt_v_end"] = _r(rest_after.median(), 2) if len(rest_after) else _r(df["batt_voltage_v"].iloc[-1], 2)
     out["batt_v_end_at_rest"] = bool(len(rest_after))
     out["gps"] = gps_summary(df, air)
+    trim = s.info.get("trim")
+    if trim:
+        out["trim"] = {k: v for k, v in trim.items() if k != "height_full_log"}
+        full = trim.get("height_full_log") or {}
+        if full.get("home_msl_source") and out["gps"].get("home_msl_source") != full["home_msl_source"]:
+            out["gps"]["home_msl_m"] = full["home_msl_m"]
+            out["gps"]["home_msl_source"] = full["home_msl_source"] + " (whole log)"
+        out["starts_airborne"] = bool(air.iloc[0]) if len(air) else False
+    out["test"] = test_conditions(s.info["header"], for_flight(s.flight_id))
+    return out
+
+
+def _numbers(text: str) -> list[float]:
+    return [float(x) for x in re.findall(r"\d+(?:\.\d+)?", text or "")]
+
+
+def test_conditions(header: dict, note: dict) -> dict:
+    """Commanded speeds/altitude and payload: from the log header (``commanded_*``, ``notes``), unless the
+    flight's annotation overrides them."""
+    out: dict = {}
+    speeds = note.get("desired_speeds_m_s") or _numbers(header.get("commanded_speed_ms", ""))
+    if speeds:
+        out["desired_speeds_m_s"] = [int(v) if float(v).is_integer() else v for v in speeds]
+    alt = _numbers(header.get("commanded_altitude_m", ""))
+    if alt:
+        out["commanded_alt_m"] = int(alt[0]) if alt[0].is_integer() else alt[0]
+    notes = header.get("notes", "") or ""
+    if "payload_g" in note:
+        out["payload_g"] = note["payload_g"]
+    elif re.search(r"\bno payload\b", notes, re.I):
+        out["payload_g"] = 0
+    else:
+        m = re.search(r"(\d+(?:\.\d+)?)\s*(k?g)\b[^,;]*payload|payload[^,;\d]*(\d+(?:\.\d+)?)\s*(k?g)\b", notes, re.I)
+        if m:
+            val, unit = (m.group(1), m.group(2)) if m.group(1) else (m.group(3), m.group(4))
+            out["payload_g"] = round(float(val) * (1000 if unit.lower() == "kg" else 1), 1)
+            out["payload_g"] = int(out["payload_g"]) if float(out["payload_g"]).is_integer() else out["payload_g"]
+    m = re.search(r"(\d+)\s*mah\s*battery", notes, re.I)
+    if m:
+        out["battery_mah"] = int(m.group(1))
+    if notes:
+        out["notes"] = notes
     return out
 
 
@@ -208,6 +251,14 @@ def run_checks(s: Session, summary: dict) -> list[dict]:
             "The cleaned data calls them mag_*_mgauss; the logger's column names should be fixed.")
 
     # --- landing in log
+    tr = summary.get("trim")
+    if tr:
+        part = " and ".join(x for x in [f"before {tr['keep_from_s']:g} s" if tr.get("keep_from_s") is not None else "",
+                                        f"after {tr['keep_to_s']:g} s" if tr.get("keep_to_s") is not None else ""] if x)
+        add("info", "Part of the log removed",
+            f"Data {part} (elapsed time) is left out of the processed data and plots"
+            + (f" ({tr['reason']}). " if tr.get("reason") else ". ") +
+            f"{tr['rows_kept']} of {tr['rows_raw']} samples kept; the raw log is complete.")
     if summary.get("takeoff_s") is not None and not summary.get("landed_in_log", True):
         add("info", "Log ends while airborne", "The log stops before the vehicle landed.")
 
