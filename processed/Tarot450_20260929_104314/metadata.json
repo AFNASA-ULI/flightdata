@@ -243,6 +243,15 @@
         "rows": 11722,
         "bag_closed": false,
         "unique_rows": 11722
+      },
+      {
+        "name": "wind_drone_20261020_104612_csv",
+        "kind": "csv",
+        "start_utc": "2026-10-20T16:46:14.933463849+00:00",
+        "end_utc": "2026-10-20T17:09:07.731949616+00:00",
+        "rows": 6865,
+        "bag_closed": true,
+        "unique_rows": 6865
       }
     ]
   },
