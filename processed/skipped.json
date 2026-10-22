@@ -13,5 +13,57 @@
     "file": "raw_data/Tarot450/TAROT_450_20261008T013712Z.csv",
     "reason": "No autopilot data in this log (the logger had no MAVLink connection).",
     "start_utc": "2026-10-08T01:38:08.919000+00:00"
+  },
+  {
+    "file": "raw_data/aurelia_x6_20261020_201136_csv/cube_telemetry_node__battery.csv",
+    "reason": "No reader for this log format."
+  },
+  {
+    "file": "raw_data/aurelia_x6_20261020_201136_csv/cube_telemetry_node__ekf_status.csv",
+    "reason": "No reader for this log format."
+  },
+  {
+    "file": "raw_data/aurelia_x6_20261020_201136_csv/cube_telemetry_node__gps__filtered.csv",
+    "reason": "No reader for this log format."
+  },
+  {
+    "file": "raw_data/aurelia_x6_20261020_201136_csv/cube_telemetry_node__gps__raw.csv",
+    "reason": "No reader for this log format."
+  },
+  {
+    "file": "raw_data/aurelia_x6_20261020_201136_csv/cube_telemetry_node__gps__status.csv",
+    "reason": "No reader for this log format."
+  },
+  {
+    "file": "raw_data/aurelia_x6_20261020_201136_csv/cube_telemetry_node__imu__filtered.csv",
+    "reason": "No reader for this log format."
+  },
+  {
+    "file": "raw_data/aurelia_x6_20261020_201136_csv/cube_telemetry_node__imu__mag.csv",
+    "reason": "No reader for this log format."
+  },
+  {
+    "file": "raw_data/aurelia_x6_20261020_201136_csv/cube_telemetry_node__imu__raw.csv",
+    "reason": "No reader for this log format."
+  },
+  {
+    "file": "raw_data/aurelia_x6_20261020_201136_csv/cube_telemetry_node__motors__pwm.csv",
+    "reason": "No reader for this log format."
+  },
+  {
+    "file": "raw_data/aurelia_x6_20261020_201136_csv/pi_peripherals_node__tmp119__batt1_temp1.csv",
+    "reason": "No reader for this log format."
+  },
+  {
+    "file": "raw_data/aurelia_x6_20261020_201136_csv/pi_peripherals_node__tmp119__batt1_temp2.csv",
+    "reason": "No reader for this log format."
+  },
+  {
+    "file": "raw_data/aurelia_x6_20261020_201136_csv/pi_peripherals_node__tmp119__batt2_temp1.csv",
+    "reason": "No reader for this log format."
+  },
+  {
+    "file": "raw_data/aurelia_x6_20261020_201136_csv/pi_peripherals_node__tmp119__batt2_temp2.csv",
+    "reason": "No reader for this log format."
   }
 ]
