@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.7.1",
+  "pipeline_version": "1.7.2",
   "flight_id": "Tarot450_20260408_105711",
   "platform": {
     "id": "TAROT_450",
@@ -10,7 +10,7 @@
   },
   "reader": "legacy_v1",
   "source": {
-    "file": "raw_data/Tarot450/Flight2_Tarrot450_2026_04_08.csv",
+    "file": "raw_data/Tarot450/TAROT_450_2026_04_08.csv",
     "sha256": "3fd9bad02669b14e9995efe1df751dac6788038fcb4aaf82a75ecd9b60f6a56b",
     "bytes": 1458462
   },
@@ -25,7 +25,7 @@
     "gps_synced_from_row": 2
   },
   "summary": {
-    "session_id": "Flight2_Tarrot450_2026_04_08",
+    "session_id": "TAROT_450_2026_04_08",
     "platform": "Tarot 450",
     "platform_id": "TAROT_450",
     "start_utc": "2026-04-08T16:57:11.937000+00:00",
