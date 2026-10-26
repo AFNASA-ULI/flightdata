@@ -40,6 +40,9 @@ def _size(path: Path) -> int:
 
 
 def _write_table(df: pd.DataFrame, base: Path) -> None:
+    if df.attrs:  # in-memory flags (e.g. dry_run) are not part of the data files
+        df = df.copy(deep=False)
+        df.attrs = {}
     df.to_parquet(base.with_suffix(".parquet"), index=False)
     csv = df.copy()
     for c in csv.columns:
@@ -86,6 +89,7 @@ def process_session(s: Session, root: Path, prefix: str = "") -> dict:
     meta = {
         "pipeline_version": __version__,
         "flight_id": s.flight_id,
+        "dry_run": bool(s.info.get("dry_run")),
         "platform": s.info["platform"],
         "reader": s.info["reader"],
         "source": {"file": s.info["source_rel"], "sha256": _sha256(s.source),

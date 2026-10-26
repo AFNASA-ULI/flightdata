@@ -10,6 +10,7 @@ from __future__ import annotations
 import html
 import json
 import math
+import re
 
 import numpy as np
 import pandas as pd
@@ -42,14 +43,15 @@ def plot_data(df: pd.DataFrame, wind: pd.DataFrame | None, hwas: pd.DataFrame | 
         "roll": _arr(d["roll_deg"], 1), "pitch": _arr(d["pitch_deg"], 1),
         "V": _arr(d["batt_voltage_v"], 2), "I": _arr(d["batt_current_a"], 2),
         "mah": _arr(d["batt_consumed_mah"], 0),
-        "m1": _arr(d["motor1_us"], 0), "m2": _arr(d["motor2_us"], 0),
-        "m3": _arr(d["motor3_us"], 0), "m4": _arr(d["motor4_us"], 0),
+        "mot": [[f"SRV{c[5:-3]}", _arr(d[c], 0)] for c in _motor_cols(d)],
         "vx": _arr(d["vib_x_m_s2"], 2), "vy": _arr(d["vib_y_m_s2"], 2), "vzb": _arr(d["vib_z_m_s2"], 2),
         "ev": _arr(d["ekf_vel_var"], 3), "eph": _arr(d["ekf_pos_horiz_var"], 3),
         "epv": _arr(d["ekf_pos_vert_var"], 3), "ec": _arr(d["ekf_compass_var"], 3),
         "sats": _arr(d["gps_sats"], 0), "hdop": _arr(d["gps_hdop"], 2), "fixt": _arr(d["gps_fix_type"], 0),
         "mode": [m if isinstance(m, str) else "—" for m in d["flight_mode"].astype(object)],
         "btemp": _arr(d["batt_temp_c"], 2),
+        # several battery sensors (e.g. batt1_temp1_c): plot each one instead of their mean
+        "btemps": [[c[:-2].replace("_", " "), _arr(d[c], 2)] for c in d.columns if re.fullmatch(r"batt\d+_temp\d+_c", c)],
     }
     w = None
     if wind is not None and len(wind):
@@ -67,6 +69,12 @@ def plot_data(df: pd.DataFrame, wind: pd.DataFrame | None, hwas: pd.DataFrame | 
              "mean_from": round(circmean(hwas["wind_dir_deg"])),
              "mean_from_name": compass(circmean(hwas["wind_dir_deg"]))}
     return {"D": data, "W": w, "H": h}
+
+
+def _motor_cols(df: pd.DataFrame) -> list[str]:
+    cols = [c for c in df.columns if re.fullmatch(r"motor\d+_us", c)]
+    return sorted((c for c in cols if df[c].notna().any() or c in ("motor1_us", "motor2_us", "motor3_us", "motor4_us")),
+                  key=lambda c: int(c[5:-3]))
 
 
 def compass(deg: float) -> str:
@@ -90,6 +98,8 @@ def stat_tiles(meta: dict, wind: pd.DataFrame | None,
         tiles.append(("Flight", f"≈{sm['airborne_s']:.0f} s airborne",
                       f"{start}, landed ≈{sm['landing_s']:.0f} s"
                       if sm.get("landed_in_log") else f"{start}, log ends airborne"))
+    elif meta.get("dry_run"):
+        tiles.append(("Test", "Dry run", f"bench test, not a flight; {sm['duration_s']:.0f} s logged"))
     else:
         tiles.append(("Flight", "not airborne", f"{sm['duration_s']:.0f} s logged"))
     test = sm.get("test") or {}
@@ -113,8 +123,9 @@ def stat_tiles(meta: dict, wind: pd.DataFrame | None,
     if sm.get("cruise_speed_m_s") is not None:
         tiles.append(("Cruise", f"{sm['cruise_alt_m']:.0f} m, {sm['cruise_speed_m_s']:.1f} m/s",
                       "relative alt, groundspeed"))
-    tiles.append(("Max range", _fmt(sm.get("max_range_m"), " m", 0),
-                  f"from home; max alt {_fmt(sm.get('max_alt_rel_m'), ' m')}"))
+    if sm.get("max_range_m") is not None or not meta.get("dry_run"):
+        tiles.append(("Max range", _fmt(sm.get("max_range_m"), " m", 0),
+                      f"from home; max alt {_fmt(sm.get('max_alt_rel_m'), ' m')}"))
     if sm.get("batt_consumed_mah") is not None:
         bsub = f"{_fmt(sm.get('batt_v_start'), ' V')}" + (" in flight" if sm.get("starts_airborne") else "")
         bsub += f" → {_fmt(sm.get('batt_v_end'), ' V')}"
@@ -125,11 +136,14 @@ def stat_tiles(meta: dict, wind: pd.DataFrame | None,
         if sm.get("cruise_current_a") is not None:
             bsub += f", ≈{sm['cruise_current_a']:.0f} A cruise"
         tiles.append(("Battery", _fmt(sm.get("batt_consumed_mah"), " mAh", 0), bsub))
+    elif sm.get("batt_v_start") is not None:
+        v = max(sm["batt_v_start"], sm.get("batt_v_end") or 0)
+        tiles.append(("Battery", _fmt(v, " V", 2), "not connected (below 1 V)" if v < 1 else "voltage"))
     g = sm.get("gps") or {}
     if g.get("fix"):
         main = g["fix"][0] if g["fix"][0]["pct"] >= 50 else max(g["fix"], key=lambda f: f["pct"])
         rest = [f for f in g["fix"] if f is not main]
-        gsub = (f"{main['accuracy']} · " if main["accuracy"] else "") + f"{main['pct']:.0f}% of flight"
+        gsub = (f"{main['accuracy']} · " if main["accuracy"] else "") + f"{main['pct']:.0f}% of {'flight' if g.get('basis') == 'airborne' else 'log'}"
         if rest:
             gsub += "; " + ", ".join(f"{f['name']} {f['pct']:.0f}%" for f in rest)
         tiles.append(("GPS", main["name"], gsub))
@@ -177,8 +191,17 @@ def _with_home(p: dict, sm: dict) -> dict:
     return p
 
 
+def kind_for(meta: dict) -> str:
+    return "dry run (bench test)" if meta.get("dry_run") else "flight"
+
+
 def title_for(meta: dict) -> str:
-    return f"{meta['platform']['label']} flight, {fmt(meta['summary']['start_utc'], '%d %b %Y %H:%M %Z')}"
+    return f"{meta['platform']['label']} {kind_for(meta)}, {fmt(meta['summary']['start_utc'], '%d %b %Y %H:%M %Z')}"
+
+
+DRY_BANNER = ('<div class="dry" role="note"><strong>Dry run / bench test: not a flight.</strong> The drone stayed on '
+              'the ground (or on a test bench); these data check the systems and logging. There is no flight path, and '
+              'no wind or weather data are matched to it.</div>')
 
 
 def render(meta: dict, flight: pd.DataFrame, wind: pd.DataFrame | None,
@@ -189,13 +212,17 @@ def render(meta: dict, flight: pd.DataFrame, wind: pd.DataFrame | None,
     has_modes = any(m[2] != "—" for m in sm["modes"])
     sub = (f"Session <code>{html.escape(sm['session_id'])}</code>, {start:%d %b %Y}, "
            f"{start:%H:%M:%S} to {end:%H:%M:%S} {start:%Z} ({sm['duration_s']:.0f} s at {sm['sample_rate_hz']:.0f} Hz). "
+           + ("Dry run (bench test). " if meta.get("dry_run") else "")
            + ("Shaded bands are AUTO mode. " if has_modes else "")
-           + "Zoom any time plot and the others follow; the time range you zoom to is highlighted on the ground track.")
+           + "Zoom any time plot and the others follow"
+           + ("; the time range you zoom to is highlighted on the ground track." if flight["north_m"].notna().any() else "."))
     dl = " · ".join(f'<a href="{html.escape(href)}">{html.escape(label)}</a>' for label, href in downloads.items())
     footer = (f"Generated from <code>{html.escape(meta['source']['file'])}</code> "
               f"({html.escape(meta['header'].get('format', ''))}) by the nasauli pipeline "
               f"v{meta['pipeline_version']}, reader <code>{meta['reader']}</code>. Time axis is "
-              f"<code>elapsed_s</code>; hover times are GPS-corrected Mountain Time.")
+              f"<code>elapsed_s</code>; hover times are "
+              + ("the onboard computer's clock in Mountain Time." if meta["reader"] == "ros2_telemetry"
+                 else "GPS-corrected Mountain Time."))
     wind_section = (
         '<section data-plot="p-wind"><h2>Wind speed</h2><p class="cap">Wind drone (blue) and HWAS weather station '
         '(orange steps, one reading every 30 s; gusts red dotted). Matched to this flight on GPS time.</p>'
@@ -203,13 +230,16 @@ def render(meta: dict, flight: pd.DataFrame, wind: pd.DataFrame | None,
         '<section data-plot="p-wdir"><h2>Wind direction</h2><p class="cap">Direction the wind comes from: wind drone '
         '(blue dots) and HWAS weather station (orange diamonds).</p><div id="p-wdir" class="plot"></div></section>'
         '<section data-plot="p-temp"><h2>Temperatures</h2><p class="cap">Air (HWAS weather station, orange), wind-drone '
-        'sensor (blue) and battery (Tarot telemetry, red), °C</p><div id="p-temp" class="plot"></div></section>')
+        'sensor (blue) and battery (drone telemetry, red), °C</p><div id="p-temp" class="plot"></div></section>')
     out = TEMPLATE
     for k, v in {
-        "__TITLE__": html.escape(title_for(meta)), "__H1__": html.escape(f"{meta['platform']['label']} flight"),
+        "__TITLE__": html.escape(title_for(meta)), "__H1__": html.escape(f"{meta['platform']['label']} {kind_for(meta)}"),
+        "__DRY__": DRY_BANNER if meta.get("dry_run") else "",
         "__BACK__": html.escape(back_href),
         "__SUB__": sub, "__STATS__": _stats_html(stat_tiles(meta, wind, hwas)), "__NOTES__": _notes_html(meta["checks"]),
-        "__WIND__": wind_section, "__DOWNLOADS__": dl, "__FOOTER__": footer,
+        "__WIND__": wind_section if not meta.get("dry_run") else
+        '<section data-plot="p-temp"><h2>Temperatures</h2><p class="cap">Battery temperature sensors, °C</p>'
+        '<div id="p-temp" class="plot"></div></section>', "__DOWNLOADS__": dl, "__FOOTER__": footer,
         "__MODES__": json.dumps(sm["modes"], separators=(",", ":")),
         "__DATA__": json.dumps(_with_home(plot_data(flight, wind, hwas), sm), separators=(",", ":")),
     }.items():
@@ -260,6 +290,8 @@ button{font:inherit;font-size:.85rem;color:var(--ink);background:var(--panel);bo
 button:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
 .downloads{margin:0 0 18px;font-size:.9rem}
 footer{color:var(--muted);font-size:.85rem;margin-top:10px}
+.dry{background:var(--warn-bg);border:2px dashed var(--c2);border-radius:4px;padding:10px 14px;margin:0 0 16px;font-size:.95rem}
+.dry strong{color:var(--c2)}
 html.embed .head,html.embed footer{display:none}
 html.embed body{background:transparent}
 html.embed main{padding:0;max-width:none}
@@ -267,6 +299,7 @@ html.embed main{padding:0;max-width:none}
 </head>
 <body>
 <main>
+__DRY__
 <div class="head">
 <p class="downloads"><a href="__BACK__">← All flights</a></p>
 <h1>__H1__</h1>
@@ -278,19 +311,19 @@ __NOTES__
 <p class="downloads">Download: __DOWNLOADS__</p>
 </div>
 <div class="bar"><span class="readout" id="readout">Hover a plot to read values.</span><button id="reset" type="button">Reset zoom</button></div>
-<div class="top">
-<section><h2>Ground track</h2><p class="cap">Meters from home, equal scale. Color is time.</p><div id="p-track" class="plot"></div></section>
+<div class="top" id="top">
+<section id="s-track"><h2>Ground track</h2><p class="cap">Meters from home, equal scale. Color is time.</p><div id="p-track" class="plot"></div></section>
 <div class="stack">
 <section data-plot="p-alt"><h2>Altitude</h2><p class="cap" id="alt-cap">Above takeoff</p><div id="p-alt" class="plot"></div></section>
 <section data-plot="p-gs"><h2>Groundspeed and climb rate</h2><div id="p-gs" class="plot"></div></section>
 </div>
 </div>
-<section style="margin-bottom:14px"><h2>3D trajectory</h2><p class="cap">Meters from home; height relative to takeoff, vertical scale exaggerated. Drag to rotate, scroll to zoom.</p><div id="p-3d" class="plot" style="height:520px"></div></section>
+<section id="s-3d" style="margin-bottom:14px"><h2>3D trajectory</h2><p class="cap">Meters from home; height relative to takeoff, vertical scale exaggerated. Drag to rotate, scroll to zoom.</p><div id="p-3d" class="plot" style="height:520px"></div></section>
 <div class="stack">
 __WIND__
 <section data-plot="p-att"><h2>Attitude</h2><p class="cap">Roll and pitch in degrees.</p><div id="p-att" class="plot"></div></section>
 <section data-plot="p-bat"><h2>Battery</h2><p class="cap">Voltage (left axis), current (right axis)</p><div id="p-bat" class="plot"></div></section>
-<section data-plot="p-mot"><h2>Motor outputs</h2><p class="cap">SRV1–4 PWM, µs</p><div id="p-mot" class="plot"></div></section>
+<section data-plot="p-mot"><h2>Motor outputs</h2><p class="cap" id="mot-cap">Servo outputs (PWM), µs</p><div id="p-mot" class="plot"></div></section>
 <section data-plot="p-vib"><h2>Vibration</h2><p class="cap">m/s²</p><div id="p-vib" class="plot"></div></section>
 <section data-plot="p-gps"><h2>GPS</h2><p class="cap">Fix type (left axis; RTK Fixed: cm-level and RTK Float: ~0.2–1 m, both relative to the base; DGPS ~0.5–2 m; 3D ~2–5 m) and satellites (right axis)</p><div id="p-gps" class="plot"></div></section>
 <section data-plot="p-ekf"><h2>EKF variances</h2><p class="cap">Dotted line: ArduPilot's default failsafe threshold (0.8)</p><div id="p-ekf" class="plot"></div></section>
@@ -310,9 +343,13 @@ if(EMBED){document.documentElement.classList.add('embed');
     new ResizeObserver(fit).observe(document.querySelector('main'));window.addEventListener('load',fit);}catch(e){}}
 // Drop panels whose data this log format doesn't have.
 const has=(...ks)=>ks.some(k=>(D[k]||[]).some(v=>v!==null&&v!==0));
-const AVAIL={'p-alt':has('alt'),'p-gs':has('gs','vz'),'p-att':has('roll','pitch'),'p-bat':has('V','I'),'p-mot':has('m1','m2','m3','m4'),
+// No position (e.g. a bench test without GPS): drop the ground track and 3D panels.
+const HASPOS=has('E','N');
+if(!HASPOS){['s-track','s-3d'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});document.getElementById('top').style.gridTemplateColumns='1fr';}
+for(const [n,y] of D.mot)D['mot_'+n]=y;
+const AVAIL={'p-alt':has('alt'),'p-gs':has('gs','vz'),'p-att':has('roll','pitch'),'p-bat':has('V','I'),'p-mot':D.mot.some(([n,y])=>y.some(v=>v!==null&&v!==0)),
   'p-vib':has('vx','vy','vzb'),'p-gps':has('fixt'),'p-ekf':has('ev','eph','epv','ec'),'p-wind':!!(W||H),'p-wdir':!!(W||H),
-  'p-temp':has('btemp')||!!(W&&W.temp.some(v=>v!==null))||!!(H&&H.temp.some(v=>v!==null))};
+  'p-temp':has('btemp')||D.btemps.length>0||!!(W&&W.temp.some(v=>v!==null))||!!(H&&H.temp.some(v=>v!==null))};
 const FIXN={0:'No GPS',1:'No fix',2:'2D',3:'3D',4:'DGPS',5:'RTK Float',6:'RTK Fixed',7:'Static',8:'PPP'};
 document.querySelectorAll('section[data-plot]').forEach(s=>{if(!AVAIL[s.dataset.plot])s.remove();});
 const TS=Object.keys(AVAIL).filter(k=>AVAIL[k]);
@@ -412,17 +449,21 @@ function draw(){
   const HM=D.home_msl,altTr=[L(D.alt,'above takeoff',c1,{customdata:D.alt.map(v=>v===null||HM===null?null:(v+HM).toFixed(1)),
       hovertemplate:HM===null?'%{y:.1f} m':'%{y:.1f} m above takeoff<br>%{customdata} m MSL<extra></extra>'})];
   if(HM!==null)altTr.push({x:[D.t[0]],y:[yr[0]+HM],yaxis:'y2',type:'scatter',mode:'markers',marker:{opacity:0},showlegend:false,hoverinfo:'skip'});
-  react('p-alt',altTr,B({yaxis:axis({title:{text:'m above takeoff'},range:yr}),
-    yaxis2:HM===null?undefined:axis({title:{text:'m MSL'},overlaying:'y',side:'right',showgrid:false,range:[yr[0]+HM,yr[1]+HM],tickformat:'.0f'}),showlegend:false}),cfg);
+  const altLay={yaxis:axis({title:{text:'m above takeoff'},range:yr}),showlegend:false};
+  if(HM!==null)altLay.yaxis2=axis({title:{text:'m MSL'},overlaying:'y',side:'right',showgrid:false,range:[yr[0]+HM,yr[1]+HM],tickformat:'.0f'});
+  react('p-alt',altTr,B(altLay),cfg);
   react('p-gs',[L(D.gs,'groundspeed',c1),L(D.vz,'climb rate',c2)],B({yaxis:axis({title:{text:'m/s'}})}),cfg);
   react('p-att',[L(D.roll,'roll',c1),L(D.pitch,'pitch',c2)],B({yaxis:axis({title:{text:'deg'}})}),cfg);
   react('p-bat',[L(D.V,'voltage',c1),L(D.I,'current',c4,{yaxis:'y2',line:{color:c4,width:1}})],
     B({yaxis:axis({title:{text:'V'}}),yaxis2:axis({title:{text:'A'},overlaying:'y',side:'right',showgrid:false,rangemode:'tozero'})}),cfg);
-  react('p-mot',[L(D.m1,'SRV1',c1),L(D.m2,'SRV2',c2),L(D.m3,'SRV3',c3),L(D.m4,'SRV4',c4)],B({yaxis:axis({title:{text:'µs'}})}),cfg);
+  const mpal=[c1,c2,c3,c4,css('--muted'),css('--ink'),c1,c2],mdash=['solid','solid','solid','solid','solid','solid','dot','dot'];
+  react('p-mot',D.mot.map(([n,y],i)=>L(y,n,mpal[i%8],{line:{color:mpal[i%8],width:1.3,dash:mdash[i%8]}})),B({yaxis:axis({title:{text:'µs'}})}),cfg);
   react('p-vib',[L(D.vx,'X',c1),L(D.vy,'Y',c2),L(D.vzb,'Z',c3)],B({yaxis:axis({title:{text:'m/s²'},rangemode:'tozero'})}),cfg);
   react('p-gps',[L(D.fixt,'fix type',c1,{line:{color:c1,width:2,shape:'hv'},customdata:D.fixt.map(v=>FIXN[v]||''),hovertemplate:'%{customdata}<extra>fix</extra>'}),
       L(D.sats,'satellites',c2,{yaxis:'y2',line:{color:c2,width:1}})],
-    B({yaxis:axis({title:{text:'fix'},range:[2.5,6.5],tickvals:[3,4,5,6],ticktext:['3D','DGPS','RTK Float','RTK Fixed']}),
+    B({yaxis:axis(Object.assign({title:{text:'fix'}},Math.min(...D.fixt.filter(v=>v!==null))<3
+        ?{range:[-0.5,6.5],tickvals:[0,1,2,3,4,5,6],ticktext:['No GPS','No fix','2D','3D','DGPS','RTK Float','RTK Fixed']}
+        :{range:[2.5,6.5],tickvals:[3,4,5,6],ticktext:['3D','DGPS','RTK Float','RTK Fixed']})),
        yaxis2:axis({title:{text:'sats'},overlaying:'y',side:'right',showgrid:false,rangemode:'tozero'}),margin:{l:80,r:56,t:30,b:36}}),cfg);
   react('p-ekf',[L(D.ev,'velocity',c1),L(D.eph,'pos horiz',c3),L(D.epv,'pos vert',c2),L(D.ec,'compass',c4)],
     B({yaxis:axis({title:{text:'variance'},rangemode:'tozero'}),shapes:base().shapes.concat([{type:'line',xref:'paper',x0:0,x1:1,y0:.8,y1:.8,line:{color:c4,width:1,dash:'dot'}}])}),cfg);
@@ -444,7 +485,8 @@ function draw(){
   const tt=[];
   if(H)tt.push({x:H.t,y:H.temp,name:'air (HWAS)',type:'scatter',mode:'lines+markers',line:{color:c2,width:2.4,shape:'hv'},marker:{size:6}});
   if(W)tt.push({x:W.t,y:W.temp,name:'wind-drone sensor',type:'scatter',mode:'lines',line:{color:c1,width:1.4}});
-  if(has('btemp'))tt.push(L(D.btemp,'battery',c4,{line:{color:c4,width:1.6}}));
+  if(D.btemps.length){const tp=[c4,c2,c1,c3,css('--muted'),css('--ink')];D.btemps.forEach(([n,y],i)=>tt.push(L(y,n,tp[i%6],{line:{color:tp[i%6],width:1.6}})));}
+  else if(has('btemp'))tt.push(L(D.btemp,'battery',c4,{line:{color:c4,width:1.6}}));
   if(tt.length)react('p-temp',tt,B({yaxis:axis({title:{text:'°C'}})}),cfg);
 }
 let busy=false;

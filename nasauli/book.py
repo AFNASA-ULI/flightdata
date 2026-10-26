@@ -62,6 +62,22 @@ def when(meta: dict) -> str:
     return fmt(meta["summary"]["start_utc"])
 
 
+def dry(meta: dict, text: str = " (dry run)") -> str:
+    return text if meta.get("dry_run") else ""
+
+
+def counts(ms: list[dict]) -> str:
+    n_dry = sum(bool(m.get("dry_run")) for m in ms)
+    n = len(ms) - n_dry
+    parts = ([f"{n} flight(s)"] if n or not n_dry else []) + ([f"{n_dry} dry run(s) / bench test(s)"] if n_dry else [])
+    return ", ".join(parts)
+
+
+def raw_link(root: Path, rel: str) -> str:
+    """Link to a raw log on GitHub: the file view, or the folder view for a log kept as a folder."""
+    return tree(rel) if (root / rel).is_dir() else blob(rel)
+
+
 def page_id(meta: dict) -> str:
     return meta["flight_id"] + (f"__{meta['_prefix']}" if meta["_prefix"] else "")
 
@@ -103,7 +119,7 @@ class Book:
         for m in metas:
             sm = m["summary"]
             rows.append(
-                f"| [{when(m)}]({link_prefix}{page_id(m)}.md) | "
+                f"| [{when(m)}]({link_prefix}{page_id(m)}.md){dry(m, ' **dry run**')} | "
                 + (f"{esc(m['platform']['label'])} | " if drone_col else "")
                 + f"{fnum(sm.get('airborne_s'), unit=' s')} | {fnum(sm.get('max_range_m'), unit=' m')} | "
                 f"{fnum(sm.get('max_alt_rel_m'), '{:.1f}', ' m')} | {wind_cell(m)} | {n_warn(m)} |")
@@ -118,7 +134,7 @@ class Book:
         for pid in self.platform_order:
             ms = self.by_platform[pid]
             p = ms[0]["platform"]
-            parts += [f"## {p['label']}", "", f"{p.get('description') or ''} {len(ms)} flight(s). "
+            parts += [f"## {p['label']}", "", f"{p.get('description') or ''} {counts(ms)}. "
                       f"[Drone page]({pid}/index.md)", "", self.flight_table(ms, f"{pid}/"), ""]
             self.drone_page(pid, ms)
             toc.append({"file": f"experiments/{pid}/index",
@@ -135,7 +151,7 @@ class Book:
         airborne = sum(m["summary"].get("airborne_s") or 0 for m in ms)
         text = [f"# {p['label']}", "",
                 f"{p.get('kind') or ''}{'. ' if p.get('kind') else ''}{p.get('description') or ''}", "",
-                f"{len(ms)} flight(s), {airborne / 60:.0f} min airborne in total. "
+                f"{counts(ms)}, {airborne / 60:.0f} min airborne in total. "
                 f'Download all of this drone\'s processed data: <a href="../../downloads/{pid}_processed.zip">{pid}_processed.zip</a>',
                 "", self.flight_table(ms, "")]
         self.write(f"experiments/{pid}/index.md", "\n".join(text))
@@ -151,12 +167,17 @@ class Book:
         sm = m["summary"]
         rel = f"{PROCESSED}/{m['flight_id']}/"
         text = [
-            f"# {when(m)}", "",
-            f'<p class="flight-meta">{html.escape(m["platform"]["label"])} · flight <code>{m["flight_id"]}</code> · '
+            f"# {when(m)}{dry(m)}", "",
+            f'<p class="flight-meta">{html.escape(m["platform"]["label"])} · {"dry run" if m.get("dry_run") else "flight"} <code>{m["flight_id"]}</code> · '
             f'session <code>{html.escape(sm["session_id"])}</code> · {sm["duration_s"]:.0f} s logged at '
             f'{sm["sample_rate_hz"]:.0f} Hz</p>', "",
             f'<div class="flight-stats">\n{tiles}\n</div>', "",
         ]
+        if m.get("dry_run"):
+            text[2:2] = [":::{admonition} Dry run / bench test: not a flight", ":class: warning", "", "The drone stayed on the ground "
+                         "or on a test bench to check its systems and logging, so there is no flight path, and no wind "
+                         "or weather data are matched to it. (Raw data with “dry_run” in a folder or file name are "
+                         "always shown as dry runs.)", ":::", ""]
         warns = [c for c in m["checks"] if c["level"] == "warn"]
         infos = [c for c in m["checks"] if c["level"] != "warn"]
         if warns or infos:
@@ -169,7 +190,8 @@ class Book:
                 text += [":::", ""]
         report = f"../../reports/{page_id(m)}.html"
         text += ["## Plots", "",
-                 "Zoom any time plot and the others follow; the zoomed time range is highlighted on the ground track. "
+                 "Zoom any time plot and the others follow"
+                 + ("." if m.get("dry_run") else "; the zoomed time range is highlighted on the ground track.") + " "
                  f'<a href="{report}" target="_blank">Open the plots in their own page ↗</a>', "",
                  f'<iframe class="flight-report" src="{report}" title="Interactive plots" loading="lazy"></iframe>', "",
                  "## Data", "",
@@ -183,7 +205,8 @@ class Book:
             label = labels.get(f.removeprefix(pre), f)
             text.append(f"| [{f}]({raw_url(rel + f)}) | {label} | {size((d / f).stat().st_size)} |")
         src = m["source"]
-        text += [f"| [{Path(src['file']).name}]({raw_url(src['file'])}) | Raw log, as recorded | {size(src['bytes'])} |", "",
+        raw_href = tree(src["file"]) if (self.root / src["file"]).is_dir() else raw_url(src["file"])
+        text += [f"| [{Path(src['file']).name}]({raw_href}) | Raw log, as recorded | {size(src['bytes'])} |", "",
                  f"More about the raw log: [raw data page](../../data/raw/{page_id(m)}.md). "
                  f"Column definitions: [processed data](../../data/processed.md)."]
         self.write(f"experiments/{pid}/{page_id(m)}.md", "\n".join(text))
@@ -201,8 +224,8 @@ class Book:
                      "|---|---|---:|"]
             for m in ms:
                 src = m["source"]["file"]
-                text.append(f"| [{when(m)}]({page_id(m)}.md) | [`{src.removeprefix(RAW + '/')}`]"
-                            f"({blob(src)}) | {size(m['source']['bytes'])} |")
+                text.append(f"| [{when(m)}]({page_id(m)}.md){dry(m, ' **dry run**')} | [`{src.removeprefix(RAW + '/')}`]"
+                            f"({raw_link(self.root, src)}) | {size(m['source']['bytes'])} |")
                 sections.append({"file": f"data/raw/{page_id(m)}"})
                 self.raw_flight_page(m)
             text.append("")
@@ -229,23 +252,30 @@ class Book:
         """The flight's log, plus the other files in its folder when that folder holds only this one log
         (e.g. an offload manifest). In a folder shared by many logs, only the log itself."""
         src = self.root / m["source"]["file"]
+        if src.is_dir():  # a log kept as a folder (one file per message type or topic)
+            return sorted(f for f in src.rglob("*") if f.is_file())
         if raw_logs(src.parent) == [src]:
             return sorted(f for f in src.parent.iterdir() if f.is_file())
         return [src]
 
     def raw_flight_page(self, m: dict) -> None:
         src = m["source"]["file"]
-        folder = src.rsplit("/", 1)[0]
+        folder = src if (self.root / src).is_dir() else src.rsplit("/", 1)[0]
         text = [f"# {m['flight_id']}", "",
-                f"{m['platform']['label']}, {when(m)}. Analysis: [experiment page](../../experiments/"
+                f"{m['platform']['label']}, {when(m)}{dry(m)}. Analysis: [experiment page](../../experiments/"
                 f"{m['platform']['id']}/{page_id(m)}.md). Folder on [GitHub]({tree(folder)}).", "",
                 "## Files", "", "| File | Size | |", "|---|---:|---|"]
+        is_dir = (self.root / src).is_dir()
+        if is_dir:
+            text[-2:-2] = [f"All files in `{src.removeprefix(RAW + '/')}/` are read by the pipeline.", ""]
         for f in self.log_files(m):
             rel = f.relative_to(self.root).as_posix()
             note = " (read by the pipeline)" if rel == src else ""
-            text.append(f"| {rel.removeprefix(RAW + '/')}{note} | {size(f.stat().st_size)} | [view]({blob(rel)}) · "
+            shown = f.relative_to(self.root / src).as_posix() if is_dir else rel.removeprefix(RAW + '/')
+            text.append(f"| {shown}{note} | {size(f.stat().st_size)} | [view]({blob(rel)}) · "
                         f"[download]({raw_url(rel)}) |")
-        text += ["", f"SHA-256 of `{Path(m['source']['file']).name}`: `{m['source']['sha256']}`", ""]
+        what = "the folder's files (names and contents, in order)" if (self.root / src).is_dir() else f"`{Path(src).name}`"
+        text += ["", f"SHA-256 of {what}: `{m['source']['sha256']}`", ""]
         hdr = {k: v for k, v in m["header"].items() if v not in ("", None)}
         if hdr:
             text += ["## Header", "", "| Key | Value |", "|---|---|"]
@@ -263,6 +293,16 @@ class Book:
                      "| Message | Rows | Columns |", "|---|---:|---|"]
             text += [f"| `{esc(r['name'])}` | {r['rows']} | {esc(r['columns'])} |" for r in msgs]
             text.append(":::")
+            self.write(f"data/raw/{page_id(m)}.md", "\n".join(text))
+            return
+        if m.get("reader") == "ros2_telemetry":
+            tops = ros2_topics(src_path)
+            text += ["## Topics", "",
+                     "A ROS 2 recording: one CSV per topic (the export of the bag), first column `bag_time_ns` "
+                     "(time the onboard computer recorded the message). The processed data put all topics on one "
+                     "20 Hz time grid; these files keep every message.", "",
+                     "| Topic | Messages | Rate | Columns |", "|---|---:|---:|---|"]
+            text += [f"| `{esc(r['name'])}` | {r['rows']} | {r['rate']} | {esc(r['columns'])} |" for r in tops]
             self.write(f"data/raw/{page_id(m)}.md", "\n".join(text))
             return
         ov = raw_overview(src_path)
@@ -437,6 +477,19 @@ def ardupilot_messages(path: Path) -> list[dict]:
         df = src.read(name)
         cols = [c for c in df.columns if c not in ("LineNo", "TimeUS")]
         out.append({"name": name[:-4], "rows": len(df), "columns": ", ".join(cols)})
+    return out
+
+
+def ros2_topics(path: Path) -> list[dict]:
+    """Topic files of a ROS 2 CSV export: topic, messages, rate, columns."""
+    out = []
+    for f in sorted(path.glob("*.csv")):
+        df = pd.read_csv(f, low_memory=False)
+        t = pd.to_numeric(df["bag_time_ns"], errors="coerce") / 1e9 if "bag_time_ns" in df else pd.Series(dtype=float)
+        span = float(t.max() - t.min()) if len(t) > 1 else 0.0
+        cols = [c for c in df.columns if c != "bag_time_ns"]
+        out.append({"name": "/" + f.stem.replace("__", "/"), "rows": len(df),
+                    "rate": f"{(len(df) - 1) / span:.1f} Hz" if span > 0 else "–", "columns": ", ".join(cols)})
     return out
 
 

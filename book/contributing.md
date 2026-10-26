@@ -8,13 +8,19 @@
    If the Pi logger missed the autopilot (no MAVLink connection), add the autopilot's own log instead: the
    Mission Planner CSV export of the .BIN log, zipped as it comes (e.g. `2026-10-07_11-58-05_log-491172.zip`),
    in the drone's folder. It is split into one flight per arm/disarm.
+   Aurelia X6 recordings go in `raw_data/AureliaX6/`, one folder per recording: either the ROS 2 bag folder
+   (with its `.mcap`) or its CSV export (one CSV per topic). If both are there, the CSV export is used.
 2. Copy any new wind-drone recordings into `raw_data/wind_drone/`: the ROS 2 bag folder, plus its `_csv`
    export if you made one (the bag alone is enough). They are matched to flights by time, so one wind log can
    cover several flights.
    If a bag's `metadata.yaml` is missing or empty (the recorder was cut off), rebuild it and the CSV export with
    `python -m nasauli repair-bag raw_data/wind_drone/<bag_folder>`.
    HWAS weather-station exports (`hwas_wx_data_<date>_<time>.csv`) go in `raw_data/hwas_data/`.
-3. Commit and push to `main`.
+3. **Dry runs and bench tests:** put `dry_run` in the folder or file name (e.g.
+   `aurelia_x6_20261020_201136_csv_dry_run`). The website then labels the data as a dry run / bench test,
+   adds `_dry_run` to its ID, shows no flight path, and doesn't match wind or weather data to it. Anything
+   without `dry_run` in its name is treated as a real flight.
+4. Commit and push to `main`.
 
 The GitHub Action then processes every flight, commits the results to `processed/`, and rebuilds this
 website. It takes a few minutes; the run shows under the repository's **Actions** tab.

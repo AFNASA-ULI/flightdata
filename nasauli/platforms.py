@@ -14,6 +14,13 @@ PLATFORMS: dict[str, dict] = {
         "folder_prefixes": ["Tarot450"],
         "description": "Tarot 450 quadcopter with an ArduPilot flight controller and a Raspberry Pi logger.",
     },
+    "AURELIA_X6": {
+        "label": "Aurelia X6",
+        "kind": "Hexacopter",
+        "folder_prefixes": ["AureliaX6", "aurelia_x6"],
+        "description": "Aurelia X6 hexacopter; autopilot telemetry and the onboard computer's sensors are recorded "
+                       "as ROS 2 topics.",
+    },
 }
 
 
