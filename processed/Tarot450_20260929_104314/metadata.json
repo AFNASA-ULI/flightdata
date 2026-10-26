@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.7.1",
+  "pipeline_version": "1.7.2",
   "flight_id": "Tarot450_20260929_104314",
   "platform": {
     "id": "TAROT_450",
@@ -10,7 +10,7 @@
   },
   "reader": "session_v2",
   "source": {
-    "file": "raw_data/Tarot450_20260929_170629Z/TAROT_450_20260929T164305Z.csv",
+    "file": "raw_data/Tarot450/Tarot450_20260929_170629Z/TAROT_450_20260929T164305Z.csv",
     "sha256": "84b9666a781b52bb0af95e02e6c5ac1e03b1dc6f6158285c64b49f0bbd0e0e43",
     "bytes": 8914900
   },
