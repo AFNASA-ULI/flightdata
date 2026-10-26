@@ -176,9 +176,10 @@ def make_flight_id(platform: dict, df: pd.DataFrame, stem: str) -> str:
     return f"{platform['short']}_{t.min():%Y%m%d_%H%M%S}" if len(t) else stem
 
 
-def apply_keep(df: pd.DataFrame, keep: tuple, reason: str) -> tuple[pd.DataFrame, dict]:
+def apply_keep(df: pd.DataFrame, keep: tuple, reason: str, rezero: bool = False) -> tuple[pd.DataFrame, dict]:
     """Drop samples outside ``keep`` (elapsed_s). Home position and the RTK takeoff elevation are taken from
-    the whole log first, so a cut that removes the takeoff does not move them."""
+    the whole log first, so a cut that removes the takeoff does not move them. With ``rezero`` the start of
+    the kept window becomes elapsed_s = 0."""
     from .checks import height_check
     lo, hi = keep
     t = df["elapsed_s"]
@@ -189,7 +190,11 @@ def apply_keep(df: pd.DataFrame, keep: tuple, reason: str) -> tuple[pd.DataFrame
         mask &= t <= hi
     info = {"keep_from_s": lo, "keep_to_s": hi, "reason": reason, "rows_raw": int(len(df)),
             "rows_kept": int(mask.sum()), "height_full_log": height_check(df, airborne(df))}
-    return df[mask].reset_index(drop=True), info
+    out = df[mask].reset_index(drop=True)
+    if rezero and lo is not None:
+        out["elapsed_s"] = (out["elapsed_s"] - lo).round(6)
+        info["rezeroed_s"] = lo
+    return out, info
 
 
 def has_autopilot_data(df: pd.DataFrame) -> bool:
@@ -219,7 +224,8 @@ def _make_session(csv_path: Path, root: Path, df: pd.DataFrame, info: dict) -> S
     info["has_autopilot_data"] = has_autopilot_data(df)
     note = for_flight(info["flight_id"])
     if note.get("keep_s") and info["has_autopilot_data"]:
-        df, info["trim"] = apply_keep(df, note["keep_s"], note.get("keep_reason", ""))
+        df, info["trim"] = apply_keep(df, note["keep_s"], note.get("keep_reason", ""),
+                                     note.get("rezero", False))
     sess = Session(source=csv_path, flight=df, info=info)
     if not info["has_autopilot_data"]:
         return sess

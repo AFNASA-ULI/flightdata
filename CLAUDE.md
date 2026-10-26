@@ -63,7 +63,8 @@ There is no test suite; validate a change by running `process` on all flights an
   complete 2026-10-07/09 bags); it was used to rebuild wind_drone_20261009_100606 (unclosed, empty metadata).
 - Desired speeds come from the header's `commanded_speed_ms`, payload from `notes` ("360g payload", "no payload");
   `annotations.py` overrides them and trims parts of a log the team says are not part of the test. A trim keeps
-  the flight ID (from the raw log start), the original elapsed_s, and the home/RTK elevation from the whole log.
+  the flight ID (from the raw log start) and the home/RTK elevation from the whole log; elapsed_s stays as in
+  the raw log unless `rezero` is set (then the start of the kept window is 0 s).
 - Anything that changes processed outputs: bump `nasauli.__version__`.
 - Generated site pages live only in `_build/`; edit `nasauli/book.py` or `book/`, never the output.
 - Times: data files keep UTC columns plus `time_local`; everything shown to people (site, reports, check

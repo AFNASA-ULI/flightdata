@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.7.2",
+  "pipeline_version": "1.8.0",
   "flight_id": "Tarot450_20261009_101730",
   "platform": {
     "id": "TAROT_450",
@@ -62,42 +62,42 @@
     "session_id": "TAROT_450_20261009T161713Z",
     "platform": "Tarot 450",
     "platform_id": "TAROT_450",
-    "start_utc": "2026-10-09T16:17:30.170000+00:00",
+    "start_utc": "2026-10-09T16:20:50.170000+00:00",
     "end_utc": "2026-10-09T16:27:00.920000+00:00",
-    "start_local": "2026-10-09T10:17:30.897278948-06:00",
+    "start_local": "2026-10-09T10:20:50.897278948-06:00",
     "end_local": "2026-10-09T10:27:01.647278948-06:00",
-    "duration_s": 570.8,
-    "samples": 11406,
+    "duration_s": 370.8,
+    "samples": 7407,
     "sample_rate_hz": 19.98,
     "modes": [
       [
         0.0,
-        206.15,
+        6.15,
         "RTL"
       ],
       [
-        206.15,
-        210.8,
+        6.15,
+        10.8,
         "ALT_HOLD"
       ],
       [
-        210.8,
-        216.7,
+        10.8,
+        16.7,
         "AUTO"
       ],
       [
-        216.7,
-        243.0,
+        16.7,
+        43.0,
         "RTL"
       ],
       [
-        243.0,
-        570.75,
+        43.0,
+        370.75,
         "AUTO"
       ]
     ],
-    "takeoff_s": 212.8,
-    "landing_s": 560.3,
+    "takeoff_s": 12.8,
+    "landing_s": 360.3,
     "airborne_s": 347.5,
     "landed_in_log": true,
     "max_alt_rel_m": 37.8,
@@ -106,8 +106,8 @@
     "cruise_speed_m_s": 5.0,
     "cruise_current_a": 16.8,
     "mission_items": 9,
-    "rtl_s": 216.7,
-    "batt_consumed_mah": 1634.0,
+    "rtl_s": 16.7,
+    "batt_consumed_mah": 1633.0,
     "batt_v_start": 16.55,
     "batt_v_end": 15.1,
     "batt_v_end_at_rest": true,
@@ -132,6 +132,15 @@
       "home_msl_m": 2162.49,
       "home_msl_source": "EKF (approximate)"
     },
+    "trim": {
+      "keep_from_s": 200.0,
+      "keep_to_s": null,
+      "reason": "pre-flight data, not part of the test",
+      "rows_raw": 11406,
+      "rows_kept": 7407,
+      "rezeroed_s": 200.0
+    },
+    "starts_airborne": false,
     "test": {
       "desired_speeds_m_s": [
         5,
@@ -147,7 +156,7 @@
     {
       "level": "warn",
       "title": "High compass variance",
-      "detail": "EKF compass variance peaks at 1.82 (t = 215.8 s). ArduPilot's default failsafe threshold is 0.8."
+      "detail": "EKF compass variance peaks at 1.82 (t = 15.8 s). ArduPilot's default failsafe threshold is 0.8."
     },
     {
       "level": "warn",
@@ -166,13 +175,18 @@
     },
     {
       "level": "info",
+      "title": "Part of the log removed",
+      "detail": "Data before 200 s (raw-log elapsed time) is left out of the processed data and plots (pre-flight data, not part of the test). Elapsed time is reset so that 200 s in the raw log is 0 s here. 7407 of 11406 samples kept; the raw log is complete."
+    },
+    {
+      "level": "info",
       "title": "RTK fix not held for the whole flight",
       "detail": "RTK Fixed (cm-level vs. base) for 93% of the airborne time; the rest was RTK Float 7% (~0.2\u20131 m vs. base). Positions in those stretches are less accurate; the GPS panel shows when."
     },
     {
       "level": "info",
       "title": "Logger skipped samples",
-      "detail": "10 scheduled sample slot(s) were skipped."
+      "detail": "9 scheduled sample slot(s) were skipped."
     }
   ],
   "home": {
@@ -189,10 +203,10 @@
     "ap_wind_speed_z_m_s"
   ],
   "wind": {
-    "flight_start_gps_utc": "2026-10-09T16:17:30.897278948+00:00",
+    "flight_start_gps_utc": "2026-10-09T16:20:50.897278948+00:00",
     "flight_end_gps_utc": "2026-10-09T16:27:01.647278948+00:00",
     "margin_s": 5.0,
-    "rows": 2904,
+    "rows": 1904,
     "coverage_pct": 100.0,
     "sources": [
       "wind_drone_20261009_100606_csv"

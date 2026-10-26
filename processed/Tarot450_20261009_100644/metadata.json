@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.7.2",
+  "pipeline_version": "1.8.0",
   "flight_id": "Tarot450_20261009_100644",
   "platform": {
     "id": "TAROT_450",
@@ -159,7 +159,7 @@
     {
       "level": "info",
       "title": "Part of the log removed",
-      "detail": "Data after 280 s (elapsed time) is left out of the processed data and plots (not part of the test). 5601 of 12402 samples kept; the raw log is complete."
+      "detail": "Data after 280 s (raw-log elapsed time) is left out of the processed data and plots (not part of the test). 5601 of 12402 samples kept; the raw log is complete."
     },
     {
       "level": "info",
