@@ -256,8 +256,10 @@ def run_checks(s: Session, summary: dict) -> list[dict]:
         part = " and ".join(x for x in [f"before {tr['keep_from_s']:g} s" if tr.get("keep_from_s") is not None else "",
                                         f"after {tr['keep_to_s']:g} s" if tr.get("keep_to_s") is not None else ""] if x)
         add("info", "Part of the log removed",
-            f"Data {part} (elapsed time) is left out of the processed data and plots"
-            + (f" ({tr['reason']}). " if tr.get("reason") else ". ") +
+            f"Data {part} (raw-log elapsed time) is left out of the processed data and plots"
+            + (f" ({tr['reason']}). " if tr.get("reason") else ". ")
+            + (f"Elapsed time is reset so that {tr['rezeroed_s']:g} s in the raw log is 0 s here. "
+               if tr.get("rezeroed_s") is not None else "") +
             f"{tr['rows_kept']} of {tr['rows_raw']} samples kept; the raw log is complete.")
     if summary.get("takeoff_s") is not None and not summary.get("landed_in_log", True):
         add("info", "Log ends while airborne", "The log stops before the vehicle landed.")
