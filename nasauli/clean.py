@@ -19,7 +19,7 @@ import pandas as pd
 from .annotations import for_flight
 from .localtime import series_to_local
 from .platforms import platform_for
-from .readers import ardupilot_csv, hwas, read_sessions, reader_for, wind_ros2
+from .readers import ardupilot_csv, hwas, read_sessions, reader_for, ros2_telemetry, wind_ros2
 
 RAW = "raw_data"
 WIND_DIR = "wind_drone"
@@ -57,7 +57,17 @@ def armed_or_unknown(df: pd.DataFrame) -> pd.Series:
 
 
 def airborne(df: pd.DataFrame) -> pd.Series:
+    if df.attrs.get("dry_run"):  # a dry run / bench test never leaves the ground, whatever the altitude noise
+        return pd.Series(False, index=df.index)
     return armed_or_unknown(df) & (df["alt_rel_m"] > AIRBORNE_ALT_M)
+
+
+DRY_RUN_TAGS = ("dry_run", "dry-run", "dryrun")
+
+
+def is_dry_run(rel_path: str) -> bool:
+    """Dry runs and bench tests are marked by "dry_run" in a folder or file name; everything else is a flight."""
+    return any(t in rel_path.lower() for t in DRY_RUN_TAGS)
 
 
 def add_local_position(df: pd.DataFrame) -> dict:
@@ -221,13 +231,17 @@ def _make_session(csv_path: Path, root: Path, df: pd.DataFrame, info: dict) -> S
     info["platform"] = platform_for(h.get("platform"), csv_path.parent.name, h.get("platform_label"))
     info["flight_id"] = make_flight_id(info["platform"], df, csv_path.stem)
     info["source_rel"] = csv_path.relative_to(root).as_posix()
+    info["dry_run"] = is_dry_run(info["source_rel"])
+    if info["dry_run"]:
+        info["flight_id"] += "_dry_run"
     info["has_autopilot_data"] = has_autopilot_data(df)
     note = for_flight(info["flight_id"])
     if note.get("keep_s") and info["has_autopilot_data"]:
         df, info["trim"] = apply_keep(df, note["keep_s"], note.get("keep_reason", ""),
                                      note.get("rezero", False))
+    df.attrs["dry_run"] = info["dry_run"]
     sess = Session(source=csv_path, flight=df, info=info)
-    if not info["has_autopilot_data"]:
+    if not info["has_autopilot_data"] or info["dry_run"]:  # no wind/weather matching for a bench test
         return sess
 
     wind, logs = load_wind_logs(root)
@@ -251,9 +265,14 @@ def find_flight_dirs(root: Path) -> list[Path]:
 
 
 def raw_logs(flight_dir: Path) -> list[Path]:
-    """Flight logs in a folder and its subfolders: CSV logs (hand-edited ``*_Fixed`` copies excluded), and
-    autopilot logs exported as one CSV per message, either zipped or as a folder (counted as one log)."""
-    export_dirs = sorted(d for d in [flight_dir, *flight_dir.rglob("*")] if ardupilot_csv.is_export_dir(d))
+    """Flight logs in a folder and its subfolders: CSV logs (hand-edited ``*_Fixed`` copies excluded),
+    autopilot logs exported as one CSV per message, either zipped or as a folder, and ROS 2 telemetry
+    recordings (a topic CSV export or a bag folder); each folder counts as one log."""
+    export_dirs = sorted(d for d in [flight_dir, *flight_dir.rglob("*")]
+                         if ardupilot_csv.is_export_dir(d) or ros2_telemetry.is_export_dir(d))
+    # A ROS 2 bag and its CSV export (<bag>_csv...) are the same recording: read the CSV export.
+    export_dirs = [d for d in export_dirs if not (any(d.glob("*.mcap")) and any(
+        e != d and e.parent == d.parent and e.name.startswith(d.name + "_csv") for e in export_dirs))]
     inside = lambda p: any(d == p.parent or d in p.parents for d in export_dirs)
     csvs = [p for p in flight_dir.rglob("*.csv") if not p.stem.endswith("_Fixed") and not inside(p)]
     zips = [p for p in flight_dir.rglob("*.zip") if ardupilot_csv.sniff(p)]

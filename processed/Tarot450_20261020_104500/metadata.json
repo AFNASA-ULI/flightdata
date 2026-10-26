@@ -1,6 +1,7 @@
 {
-  "pipeline_version": "1.8.0",
+  "pipeline_version": "1.9.0",
   "flight_id": "Tarot450_20261020_104500",
+  "dry_run": false,
   "platform": {
     "id": "TAROT_450",
     "label": "Tarot 450",
@@ -78,6 +79,7 @@
         "\u2014"
       ]
     ],
+    "dry_run": false,
     "takeoff_s": 13.4,
     "landing_s": 518.4,
     "airborne_s": 505.0,

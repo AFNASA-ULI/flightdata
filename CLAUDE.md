@@ -16,6 +16,7 @@ the flight controller. Wind data comes from a separate "wind drone" that records
 ```
 raw_data/<any folders>/       original flight logs, any layout (e.g. raw_data/Tarot450/*.csv, or one folder per flight)
 raw_data/wind_drone/          wind-drone bags (.mcap) + optional *_csv exports; one log can cover several flights
+raw_data/AureliaX6/           Aurelia X6 ROS 2 recordings: one folder per recording (.mcap bag or per-topic CSV export)
 raw_data/hwas_data/           USAFA mesonet HWAS weather-station CSVs (30 s, Mountain Time); readers/hwas.py
 processed/<flight_id>/        flight/wind/hwas .parquet+.csv, metadata.json; generated, never edit by hand
 processed/skipped.json        logs that were not processed and why (e.g. no autopilot data)
@@ -61,6 +62,15 @@ There is no test suite; validate a change by running `process` on all flights an
   (mcap + mcap-ros2-support, no ROS needed); duplicate rows across sources are dropped. `nasauli/bagtools.py`
   reproduces the team's ROS 2 CSV export byte-for-byte and the recorder's metadata.yaml (validated on the
   complete 2026-10-07/09 bags); it was used to rebuild wind_drone_20261009_100606 (unclosed, empty metadata).
+- Dry runs / bench tests: "dry_run" (also dry-run, dryrun) anywhere in the raw path (`clean.is_dry_run`) ->
+  flight ID gets `_dry_run`, `metadata.dry_run`, never airborne, no wind/HWAS matching, labeled on the site and
+  in the plots. Everything else is a real flight. The 2026-10-20 X6 recording is a dry run.
+- Aurelia X6 recordings (ROS 2 topics from cube_telemetry_node + pi_peripherals_node) are read by
+  `readers/ros2_telemetry.py`, from the per-topic CSV export or straight from the .mcap (same columns, verified
+  against a wind-drone bag and its export). Topics (100/50/10/2/1 Hz) are put on one 20 Hz grid: faster topics
+  are averaged per 50 ms step, slower ones interpolated (states held). Time is the onboard computer's bag time
+  (not GPS-checked); no armed state or flight mode; batt_temp_c is the mean of the TMP119 sensors (each kept
+  as battN_tempM_c); motors are motorN_us for every channel that is not always 0.
 - Desired speeds come from the header's `commanded_speed_ms`, payload from `notes` ("360g payload", "no payload");
   `annotations.py` overrides them and trims parts of a log the team says are not part of the test. A trim keeps
   the flight ID (from the raw log start) and the home/RTK elevation from the whole log; elapsed_s stays as in

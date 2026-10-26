@@ -49,6 +49,7 @@ def summarize(s: Session) -> dict:
         "samples": int(len(df)),
         "sample_rate_hz": _r((len(df) - 1) / (t.max() - t.min()), 2) if len(df) > 1 else None,
         "modes": mode_segments(df),
+        "dry_run": bool(s.info.get("dry_run")),
     }
     if air.any():
         out["takeoff_s"] = _r(t[air].min())
@@ -178,8 +179,10 @@ def run_checks(s: Session, summary: dict) -> list[dict]:
     def add(level, title, detail):
         found.append({"level": level, "title": title, "detail": detail})
 
-    # --- wind sensor overlap
-    if s.wind is None:
+    # --- wind sensor overlap (not matched for dry runs)
+    if summary.get("dry_run"):
+        pass
+    elif s.wind is None:
         add("info", "No wind-drone data", "There are no wind-drone logs in raw_data/wind_drone/.")
     else:
         w = s.wind_info
@@ -200,8 +203,15 @@ def run_checks(s: Session, summary: dict) -> list[dict]:
         elif w["coverage_pct"] < 99:
             add("warn", "Wind log only partly overlaps this flight",
                 f"It covers {w['coverage_pct']}% of the flight.")
-    if s.hwas is None:
+    if s.hwas is None and not summary.get("dry_run"):
         add("info", "No HWAS weather-station data", "No HWAS export in raw_data/hwas_data/ covers this flight.")
+
+    # --- battery voltage near zero (battery not connected, e.g. on a bench powered over USB)
+    v = df["batt_voltage_v"].dropna()
+    if len(v) and v.max() < 1.0:
+        add("info" if summary.get("dry_run") else "warn", "No battery voltage",
+            f"The battery voltage stays below 1 V (max {v.max():.2f} V): no flight battery was connected or the "
+            "power monitor is not reporting.")
 
     # --- reader notes (known quirks of this log format)
     for note in info.get("notes", []):
@@ -251,6 +261,10 @@ def run_checks(s: Session, summary: dict) -> list[dict]:
             "The cleaned data calls them mag_*_mgauss; the logger's column names should be fixed.")
 
     # --- landing in log
+    if summary.get("dry_run"):
+        add("info", "Dry run / bench test",
+            "Marked as a dry run (\"dry_run\" in the raw data's folder or file name): the drone did not fly, so "
+            "there is no takeoff or flight path, and wind-drone and HWAS weather data are not matched to it.")
     tr = summary.get("trim")
     if tr:
         part = " and ".join(x for x in [f"before {tr['keep_from_s']:g} s" if tr.get("keep_from_s") is not None else "",

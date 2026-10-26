@@ -9,9 +9,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from . import ardupilot_csv, hwas, legacy_v1, session_v2, wind_ros2
+from . import ardupilot_csv, hwas, legacy_v1, ros2_telemetry, session_v2, wind_ros2
 
-FLIGHT_READERS = [session_v2, legacy_v1, ardupilot_csv]
+FLIGHT_READERS = [session_v2, legacy_v1, ardupilot_csv, ros2_telemetry]
 
 
 def reader_for(path: Path):
@@ -29,5 +29,5 @@ def read_sessions(reader, path: Path):
     return [reader.read(path)]
 
 
-__all__ = ["FLIGHT_READERS", "reader_for", "read_sessions", "ardupilot_csv", "hwas", "legacy_v1", "session_v2",
+__all__ = ["FLIGHT_READERS", "reader_for", "read_sessions", "ardupilot_csv", "hwas", "legacy_v1", "ros2_telemetry", "session_v2",
            "wind_ros2"]
