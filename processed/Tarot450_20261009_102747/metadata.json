@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.10.0",
+  "pipeline_version": "1.11.0",
   "flight_id": "Tarot450_20261009_102747",
   "dry_run": false,
   "platform": {
@@ -153,7 +153,29 @@
       "payload_g": 360,
       "battery_mah": 5500,
       "notes": "5500mah battery, 360g payload"
-    }
+    },
+    "legs": [
+      {
+        "speed_m_s": 11,
+        "alt_m": 25,
+        "duration_s": 56.0,
+        "alt_median_m": 25.0,
+        "gs_median_m_s": 10.9,
+        "start_s": 47.5,
+        "end_s": 199.1,
+        "wind_drone_m_s": 4.3
+      },
+      {
+        "speed_m_s": 14,
+        "alt_m": 25,
+        "duration_s": 30.0,
+        "alt_median_m": 25.0,
+        "gs_median_m_s": 13.8,
+        "start_s": 134.6,
+        "end_s": 197.6,
+        "wind_drone_m_s": 7.5
+      }
+    ]
   },
   "checks": [
     {

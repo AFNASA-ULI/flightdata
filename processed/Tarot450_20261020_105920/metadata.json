@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.10.0",
+  "pipeline_version": "1.11.0",
   "flight_id": "Tarot450_20261020_105920",
   "dry_run": false,
   "platform": {
@@ -153,8 +153,55 @@
       ],
       "commanded_alt_m": 75,
       "payload_g": 180,
+      "battery_mah": 5500,
       "notes": "180g payload (1 wieghts)"
-    }
+    },
+    "legs": [
+      {
+        "speed_m_s": 5,
+        "alt_m": 75,
+        "duration_s": 151.0,
+        "alt_median_m": 75.0,
+        "gs_median_m_s": 5.0,
+        "start_s": 110.0,
+        "end_s": 497.5,
+        "wind_drone_m_s": 2.8,
+        "hwas_m_s": 1.0
+      },
+      {
+        "speed_m_s": 8,
+        "alt_m": 75,
+        "duration_s": 87.0,
+        "alt_median_m": 75.0,
+        "gs_median_m_s": 8.0,
+        "start_s": 272.1,
+        "end_s": 496.4,
+        "wind_drone_m_s": 2.1,
+        "hwas_m_s": 1.0
+      },
+      {
+        "speed_m_s": 11,
+        "alt_m": 75,
+        "duration_s": 57.0,
+        "alt_median_m": 75.0,
+        "gs_median_m_s": 11.0,
+        "start_s": 377.2,
+        "end_s": 495.2,
+        "wind_drone_m_s": 1.6,
+        "hwas_m_s": 0.9
+      },
+      {
+        "speed_m_s": 14,
+        "alt_m": 75,
+        "duration_s": 29.0,
+        "alt_median_m": 75.1,
+        "gs_median_m_s": 13.9,
+        "start_s": 447.4,
+        "end_s": 493.8,
+        "wind_drone_m_s": 1.5,
+        "hwas_m_s": 0.5
+      }
+    ]
   },
   "checks": [
     {
@@ -166,11 +213,6 @@
       "level": "warn",
       "title": "No battery temperature recorded",
       "detail": "The header says temp_enabled: True (i2c_unavailable: temp), but Battery_Temp_C is empty for the whole log. Check the sensor and its wiring."
-    },
-    {
-      "level": "warn",
-      "title": "High compass variance",
-      "detail": "The EKF compass variance (how far the magnetometer disagrees with the heading the EKF expects; 0 = perfect agreement, 0.8 = ArduPilot's EKF failsafe threshold, flagged here from 0.5) peaks at 1.21 at 587.9 s, on the ground after landing. In flight: median 0.20; above 0.5 for 9% and above 0.8 for 1% of the airborne time."
     },
     {
       "level": "info",

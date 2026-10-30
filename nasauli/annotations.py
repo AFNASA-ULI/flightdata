@@ -3,8 +3,8 @@
 ``keep_s``: (start, end) on the log's own ``elapsed_s`` axis; data outside it is dropped from the processed
 outputs (None = no limit). The flight ID still comes from the start of the raw log, so links stay stable.
 ``rezero``: elapsed_s restarts at 0 at the start of ``keep_s``.
-``desired_speeds_m_s`` overrides the header's ``commanded_speed_ms``; ``payload_g`` overrides the payload read
-from the header's ``notes``.
+``desired_speeds_m_s`` overrides the header's ``commanded_speed_ms``; ``payload_g`` and ``battery_mah`` override
+the payload and battery read from the header's ``notes``.
 """
 
 ANNOTATIONS: dict[str, dict] = {
@@ -14,6 +14,8 @@ ANNOTATIONS: dict[str, dict] = {
     "Tarot450_20261009_101730": {"desired_speeds_m_s": [5, 8], "keep_s": (200.0, None), "rezero": True,
                                  "keep_reason": "pre-flight data, not part of the test"},
     "Tarot450_20261009_102747": {"desired_speeds_m_s": [11, 14], "payload_g": 360},
+    "Tarot450_20261020_104500": {"battery_mah": 5500},
+    "Tarot450_20261020_105920": {"battery_mah": 5500},
 }
 
 

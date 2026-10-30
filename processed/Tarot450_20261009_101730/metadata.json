@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.10.0",
+  "pipeline_version": "1.11.0",
   "flight_id": "Tarot450_20261009_101730",
   "dry_run": false,
   "platform": {
@@ -156,14 +156,31 @@
       "payload_g": 360,
       "battery_mah": 5500,
       "notes": "5500mah battery, 360g payload"
-    }
+    },
+    "legs": [
+      {
+        "speed_m_s": 5,
+        "alt_m": 25,
+        "duration_s": 136.0,
+        "alt_median_m": 25.0,
+        "gs_median_m_s": 5.0,
+        "start_s": 65.9,
+        "end_s": 322.8,
+        "wind_drone_m_s": 4.6
+      },
+      {
+        "speed_m_s": 8,
+        "alt_m": 25,
+        "duration_s": 72.0,
+        "alt_median_m": 25.0,
+        "gs_median_m_s": 8.0,
+        "start_s": 214.1,
+        "end_s": 307.6,
+        "wind_drone_m_s": 3.4
+      }
+    ]
   },
   "checks": [
-    {
-      "level": "warn",
-      "title": "High compass variance",
-      "detail": "The EKF compass variance (how far the magnetometer disagrees with the heading the EKF expects; 0 = perfect agreement, 0.8 = ArduPilot's EKF failsafe threshold, flagged here from 0.5) peaks at 1.82 at 15.8 s, in flight. In flight: median 0.37; above 0.5 for <1% and above 0.8 for <1% of the airborne time. It is exactly 0 for 99% of the flight, which usually means the EKF was not using the compass then."
-    },
     {
       "level": "warn",
       "title": "Accelerometer clipping",

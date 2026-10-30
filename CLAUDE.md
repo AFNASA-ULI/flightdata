@@ -75,8 +75,15 @@ There is no test suite; validate a change by running `process` on all flights an
   waypoint Alt with frame 3) and go into the header as commanded_speed_ms / commanded_altitude_m. Logs with no
   commanded speed (25 Sep, 8 Apr) show the speeds held in flight ("Speed ≈… m/s", groundspeed plateaus ≥15% of the
   cruise), labeled as not the desired speed. The Cruise box shows altitude only.
-- Compass-variance check: flagged from 0.5, ArduPilot's EKF failsafe is 0.8; the note says where the peak is
-  (in flight / on the ground), the in-flight share above each, and when the variance is exactly 0 (compass unused).
+- Compass-variance warning only when the in-flight variance stays >= 0.8 (ArduPilot's EKF failsafe) for >= 1 s;
+  ground spikes and brief/lower values are not shown. Notes when it is exactly 0 (compass unused).
+- Top boxes: desired speeds (no altitude), payload on every flight ("not recorded" if unknown; battery from notes
+  or annotations), no HWAS wind box. 20 Oct flights: 5500 mAh (annotation).
+- Data-collection status (`nasauli/campaign.py`, `nasauli/coverage.py`): per drone, two 3x4 tables
+  (altitudes 25/50/75 m x speeds 5/8/11/14 m/s), cells colored by payloads flown (0/180/360 g: 3 blue, 2 green,
+  1 yellow-green, none white). Flights are split into legs (`checks.speed_legs`: one speed + one matrix altitude,
+  >= 15 s, with the wind-drone/HWAS mean during the leg) stored in `summary.legs`; the first leg of each
+  altitude/speed/payload goes to set 1, the second to set 2. Unknown payload shows "?" and counts toward none.
 - Desired speeds come from the header's `commanded_speed_ms`, payload from `notes` ("360g payload", "no payload");
   `annotations.py` overrides them and trims parts of a log the team says are not part of the test. A trim keeps
   the flight ID (from the raw log start) and the home/RTK elevation from the whole log; elapsed_s stays as in

@@ -20,7 +20,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from . import __version__
+from . import __version__, coverage
 from .clean import RAW, WIND_DIR, load_hwas_logs, load_wind_logs, raw_logs
 from .pipeline import PROCESSED, load_all_metadata, load_skipped
 from .localtime import LOCAL_LABEL, fmt
@@ -135,7 +135,9 @@ class Book:
             ms = self.by_platform[pid]
             p = ms[0]["platform"]
             parts += [f"## {p['label']}", "", f"{p.get('description') or ''} {counts(ms)}. "
-                      f"[Drone page]({pid}/index.md)", "", self.flight_table(ms, f"{pid}/"), ""]
+                      f"[Drone page]({pid}/index.md)", ""]
+            parts += coverage.section(ms, pid, lambda m, pid=pid: f"{pid}/{page_id(m)}.html", heading="###")
+            parts += [self.flight_table(ms, f"{pid}/"), ""]
             self.drone_page(pid, ms)
             toc.append({"file": f"experiments/{pid}/index",
                         "sections": [{"file": f"experiments/{pid}/{page_id(m)}"} for m in ms]})
@@ -153,7 +155,8 @@ class Book:
                 f"{p.get('kind') or ''}{'. ' if p.get('kind') else ''}{p.get('description') or ''}", "",
                 f"{counts(ms)}, {airborne / 60:.0f} min airborne in total. "
                 f'Download all of this drone\'s processed data: <a href="../../downloads/{pid}_processed.zip">{pid}_processed.zip</a>',
-                "", self.flight_table(ms, "")]
+                ""] + coverage.section(ms, pid, lambda m: f"{page_id(m)}.html") + [
+                "## Flights", "", self.flight_table(ms, "")]
         self.write(f"experiments/{pid}/index.md", "\n".join(text))
 
     def flight_page(self, pid: str, m: dict) -> None:
