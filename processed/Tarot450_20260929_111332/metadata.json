@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.11.0",
+  "pipeline_version": "1.11.1",
   "flight_id": "Tarot450_20260929_111332",
   "dry_run": false,
   "platform": {
@@ -157,7 +157,9 @@
       "desired_speeds_m_s": [
         13
       ],
-      "commanded_alt_m": 25
+      "commanded_alt_m": 25,
+      "payload_g": 0,
+      "payload_assumed": true
     },
     "legs": [
       {
