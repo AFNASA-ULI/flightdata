@@ -77,7 +77,7 @@ There is no test suite; validate a change by running `process` on all flights an
   cruise), labeled as not the desired speed. The Cruise box shows altitude only.
 - Compass-variance warning only when the in-flight variance stays >= 0.8 (ArduPilot's EKF failsafe) for >= 1 s;
   ground spikes and brief/lower values are not shown. Notes when it is exactly 0 (compass unused).
-- Top boxes: desired speeds (no altitude), payload on every flight (no payload recorded = no payload, 0 g,
+- Top boxes: desired speeds (no altitude), payload on every flight, always in grams ("0 g", never "none"; no payload recorded = 0 g,
   `test.payload_assumed`; battery from notes or annotations), no HWAS wind box. 20 Oct flights: 5500 mAh (annotation).
 - Data-collection status (`nasauli/campaign.py`, `nasauli/coverage.py`): per drone, two 3x4 tables
   (altitudes 25/50/75 m x speeds 5/8/11/14 m/s), cells colored by payloads flown (0/180/360 g: 3 blue, 2 green,
