@@ -187,6 +187,9 @@ def test_conditions(header: dict, note: dict) -> dict:
             val, unit = (m.group(1), m.group(2)) if m.group(1) else (m.group(3), m.group(4))
             out["payload_g"] = round(float(val) * (1000 if unit.lower() == "kg" else 1), 1)
             out["payload_g"] = int(out["payload_g"]) if float(out["payload_g"]).is_integer() else out["payload_g"]
+    if "payload_g" not in out:  # the team records a payload only when one is carried
+        out["payload_g"] = 0
+        out["payload_assumed"] = True
     m = re.search(r"(\d+)\s*mah\s*battery", notes, re.I)
     if "battery_mah" in note:
         out["battery_mah"] = note["battery_mah"]

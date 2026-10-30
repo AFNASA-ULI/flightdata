@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.11.0",
+  "pipeline_version": "1.11.1",
   "flight_id": "AureliaX6_20261020_141140_dry_run",
   "dry_run": true,
   "platform": {
@@ -68,7 +68,10 @@
         }
       ]
     },
-    "test": {}
+    "test": {
+      "payload_g": 0,
+      "payload_assumed": true
+    }
   },
   "checks": [
     {
