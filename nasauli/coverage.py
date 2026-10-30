@@ -66,7 +66,7 @@ def _tip(entries: list[dict], href) -> str:
 def table_html(sets: list[dict], pid: str, n: int, href) -> str:
     """One set's table as a single HTML block (no blank lines, so MyST keeps it as raw HTML)."""
     speeds = campaign.SPEEDS_M_S.get(pid, ())
-    head = "".join(f"<th>{v:g} m/s</th>" for v in speeds)
+    head = "".join(f"<th>{v:g}<br>m/s</th>" for v in speeds)
     rows = []
     for a in campaign.ALTITUDES_M:
         tds = []
@@ -74,13 +74,14 @@ def table_html(sets: list[dict], pid: str, n: int, href) -> str:
             entries = sets[n][(a, v)]
             have = sorted({e["payload"] for e in entries if e["payload"] is not None})
             unknown = any(e["payload"] is None for e in entries)
-            label = " · ".join(f"{p:g} g" for p in have)
+            label = " · ".join(f"{p:g}" for p in have)
             if unknown:
                 label += (" + " if label else "") + "?"
             tds.append(f'<td class="cov cov-{min(len(have), 3)}" tabindex="0">'
                        f'<span class="cov-v">{html.escape(label) or "&nbsp;"}</span>{_tip(entries, href)}</td>')
         rows.append(f"<tr><th>{a:g} m</th>{''.join(tds)}</tr>")
-    return (f'<table class="coverage"><caption>Set {n + 1}</caption><thead><tr><th>Altitude</th>{head}</tr>'
+    return (f'<table class="coverage"><caption>Set {n + 1} <span class="cov-unit">(payloads in g)</span></caption>'
+            f'<thead><tr><th>Alt.</th>{head}</tr>'
             f'</thead><tbody>{"".join(rows)}</tbody></table>')
 
 
@@ -92,7 +93,7 @@ def section(metas: list[dict], pid: str, href, heading: str = "##") -> list[str]
     payloads = ", ".join(_payload_label(p) for p in campaign.PAYLOADS_G)
     legend = ('<p class="cov-legend"><span class="cov cov-3">3 payloads</span> <span class="cov cov-2">2</span> '
               '<span class="cov cov-1">1</span> <span class="cov cov-0">no flight</span> '
-              '&nbsp;“?” = flown, payload not recorded</p>')
+              '</p>')
     tables = "".join(table_html(sets, pid, n, href) for n in range(campaign.SETS))
     return [f"{heading} Data collection status", "",
             f"Each altitude × speed is to be flown with every payload ({payloads}), twice: set 1 is the first "
