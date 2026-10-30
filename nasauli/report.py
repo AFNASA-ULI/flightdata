@@ -25,6 +25,12 @@ def _arr(s: pd.Series, nd: int = 2) -> list:
     return [None if math.isnan(x) else (int(x) if nd == 0 else float(x)) for x in v]
 
 
+def _and(values) -> str:
+    """5, 8, 11 & 14"""
+    v = [f"{x:g}" for x in values]
+    return v[0] if len(v) == 1 else ", ".join(v[:-1]) + " & " + v[-1]
+
+
 def _fmt(x, unit="", nd=1):
     if x is None:
         return "–"
@@ -106,9 +112,13 @@ def stat_tiles(meta: dict, wind: pd.DataFrame | None,
     if test.get("desired_speeds_m_s"):
         sp = test["desired_speeds_m_s"]
         tiles.append(("Desired speed" + ("s" if len(sp) > 1 else ""),
-                      " & ".join(f"{v:g}" for v in sp) + " m/s",
+                      _and(sp) + " m/s",
                       f"commanded, at {test['commanded_alt_m']:g} m altitude" if test.get("commanded_alt_m")
                       else "commanded"))
+    elif sm.get("held_speeds_m_s"):
+        sp = sm["held_speeds_m_s"]
+        tiles.append(("Speed" + ("s" if len(sp) > 1 else ""), "≈" + _and(sp) + " m/s",
+                      "held in flight (groundspeed); the desired speed is not in this log"))
     if "payload_g" in test:
         tiles.append(("Payload", f"{test['payload_g']:g} g" if test["payload_g"] else "none",
                       f"{test['battery_mah']} mAh battery" if test.get("battery_mah") else "from the log header"))
@@ -120,9 +130,8 @@ def stat_tiles(meta: dict, wind: pd.DataFrame | None,
         main_mode = max(dur, key=dur.get)
         sub = f"RTL from {sm['rtl_s']:.1f} s" if sm.get("rtl_s") is not None else ", ".join(dur)
         tiles.append(("Mission", main_mode + (f", {sm['mission_items']} WPs" if sm.get("mission_items") else ""), sub))
-    if sm.get("cruise_speed_m_s") is not None:
-        tiles.append(("Cruise", f"{sm['cruise_alt_m']:.0f} m, {sm['cruise_speed_m_s']:.1f} m/s",
-                      "relative alt, groundspeed"))
+    if sm.get("cruise_alt_m") is not None:
+        tiles.append(("Cruise altitude", f"{sm['cruise_alt_m']:.0f} m", "above takeoff (median while cruising)"))
     if sm.get("max_range_m") is not None or not meta.get("dry_run"):
         tiles.append(("Max range", _fmt(sm.get("max_range_m"), " m", 0),
                       f"from home; max alt {_fmt(sm.get('max_alt_rel_m'), ' m')}"))

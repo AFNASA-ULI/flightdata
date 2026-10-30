@@ -180,6 +180,7 @@ def read_sessions(path: Path) -> list[tuple[pd.DataFrame, dict]]:
 
     # Split at arm/disarm into flights: each armed period plus the disarmed time up to halfway to the next one.
     segments = _segments(t)
+    missions = _missions(src.read("CMD.csv"))
     out = []
     for i, (a, b) in enumerate(segments, start=1):
         s = t.iloc[a:b].reset_index(drop=True).copy()
@@ -193,7 +194,8 @@ def read_sessions(path: Path) -> list[tuple[pd.DataFrame, dict]]:
         info = {
             "reader": NAME,
             "header": {**header, "session_id": f"{Path(path.name).stem}#{i}",
-                       "segment": f"flight {i} of {len(segments)} in this log"},
+                       "segment": f"flight {i} of {len(segments)} in this log",
+                       **_mission_for(missions, int(t["TimeUS"].iloc[b - 1]))},
             "gps_clock_offset_s": None,  # time is the autopilot's GPS-referenced clock
             "missing_columns": missing,
             "raw_columns": [f"{n[:-4]}" for n in src.listing()],
@@ -207,6 +209,35 @@ def read_sessions(path: Path) -> list[tuple[pd.DataFrame, dict]]:
             ],
         }
         out.append((s, info))
+    return out
+
+
+def _missions(cmd: pd.DataFrame | None) -> list[dict]:
+    """Missions uploaded to the autopilot (CMD rows; a new upload starts at CNum 0): the speeds set by
+    DO_CHANGE_SPEED (MAV_CMD 178, param 2 in m/s) and the waypoint altitudes (frame 3 = above home)."""
+    if cmd is None or not len(cmd):
+        return []
+    cmd = cmd.sort_values(["TimeUS", "CNum"]).reset_index(drop=True)
+    out = []
+    for _, m in cmd.groupby((cmd["CNum"] == 0).cumsum()):
+        speeds = [float(v) for v in m.loc[m["CId"] == 178, "Prm2"] if v > 0]
+        alts = sorted({float(a) for a in m.loc[(m["CId"] == 16) & (m["Frame"] == 3), "Alt"] if a > 0})
+        out.append({"time_us": int(m["TimeUS"].iloc[0]), "speeds": speeds, "alts": alts})
+    return out
+
+
+def _mission_for(missions: list[dict], end_us: int) -> dict:
+    """Header entries for the last mission uploaded before the end of a flight segment."""
+    before = [m for m in missions if m["time_us"] <= end_us]
+    if not before:
+        return {}
+    m = before[-1]
+    g = lambda v: f"{v:g}"
+    out = {"mission_source": "mission on the autopilot (CMD: DO_CHANGE_SPEED speeds, waypoint altitudes)"}
+    if m["speeds"]:
+        out["commanded_speed_ms"] = ", ".join(g(v) for v in m["speeds"])
+    if m["alts"]:
+        out["commanded_altitude_m"] = ", ".join(g(v) for v in m["alts"])
     return out
 
 
