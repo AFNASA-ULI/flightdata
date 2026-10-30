@@ -5,7 +5,7 @@ Each flight is split into legs of one speed and one altitude (checks.speed_legs)
 (altitude, speed, payload), the first leg flown goes to set 1, the second to set 2 (later repeats are listed
 in set 2 as extra). A cell is colored by how many of the payloads it has: all three blue, two green, one
 yellow-green, none white. Hovering (or tapping) a cell lists its legs with the wind during each.
-Legs from flights whose payload is not recorded are listed too, but count toward no payload.
+A flight whose log records no payload counts as 0 g.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from .localtime import fmt
 def _payload_label(p) -> str:
     if p is None:
         return "payload not recorded"
-    return "no payload" if p == 0 else f"{p:g} g"
+    return f"{p:g} g"
 
 
 def cells(metas: list[dict], pid: str) -> list[dict]:
@@ -74,7 +74,7 @@ def table_html(sets: list[dict], pid: str, n: int, href) -> str:
             entries = sets[n][(a, v)]
             have = sorted({e["payload"] for e in entries if e["payload"] is not None})
             unknown = any(e["payload"] is None for e in entries)
-            label = " · ".join("none" if p == 0 else f"{p:g} g" for p in have)
+            label = " · ".join(f"{p:g} g" for p in have)
             if unknown:
                 label += (" + " if label else "") + "?"
             tds.append(f'<td class="cov cov-{min(len(have), 3)}" tabindex="0">'

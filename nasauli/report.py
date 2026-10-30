@@ -118,8 +118,8 @@ def stat_tiles(meta: dict, wind: pd.DataFrame | None,
                       "held in flight (groundspeed); the desired speed is not in this log"))
     batt = f"{test['battery_mah']} mAh battery" if test.get("battery_mah") else ""
     if "payload_g" in test:
-        tiles.append(("Payload", f"{test['payload_g']:g} g" if test["payload_g"] else "none",
-                      batt or ("none recorded in the log" if test.get("payload_assumed") else "from the log header")))
+        tiles.append(("Payload", f"{test['payload_g']:g} g",
+                      batt or ("no payload recorded in the log" if test.get("payload_assumed") else "from the log header")))
     dur: dict[str, float] = {}
     for a, b, m in sm["modes"]:
         if m != "—":
