@@ -28,13 +28,14 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .bd-article table { font-size: 0.9rem; }
 
 /* Data-collection status tables (nasauli/coverage.py) */
-.coverage-wrap { display: flex; flex-wrap: wrap; gap: 1.5rem; margin: 0.5rem 0 0.5rem; }
+.coverage-wrap { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.5rem 0 0.5rem; }
 table.coverage { border-collapse: collapse; font-size: 0.85rem; margin: 0; }
 table.coverage caption { caption-side: top; text-align: left; font-weight: 600; padding-bottom: 4px; }
-table.coverage th, table.coverage td { border: 1px solid var(--pst-color-border); padding: 6px 8px; text-align: center; }
+table.coverage th, table.coverage td { border: 1px solid var(--pst-color-border); padding: 5px 6px; text-align: center; line-height: 1.25; }
+table.coverage caption .cov-unit { font-weight: 400; color: var(--pst-color-text-muted); }
 table.coverage thead th { font-weight: 600; }
 table.coverage tbody th { font-weight: 600; white-space: nowrap; }
-td.cov { position: relative; min-width: 72px; cursor: default; }
+td.cov { position: relative; min-width: 56px; cursor: default; white-space: nowrap; }
 .cov-3 { background: #2f6fd8; color: #fff; }
 .cov-2 { background: #2e9e48; color: #fff; }
 .cov-1 { background: #b5d64a; color: #1c2733; }
