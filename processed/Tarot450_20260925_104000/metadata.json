@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.10.0",
+  "pipeline_version": "1.11.0",
   "flight_id": "Tarot450_20260925_104000",
   "dry_run": false,
   "platform": {
@@ -136,7 +136,19 @@
         "p95": 0.48
       }
     },
-    "test": {}
+    "test": {},
+    "legs": [
+      {
+        "speed_m_s": 5,
+        "alt_m": 25,
+        "duration_s": 437.0,
+        "alt_median_m": 25.0,
+        "gs_median_m_s": 5.0,
+        "start_s": 52.4,
+        "end_s": 528.5,
+        "wind_drone_m_s": 2.0
+      }
+    ]
   },
   "checks": [
     {
@@ -158,11 +170,6 @@
       "level": "warn",
       "title": "RTK fix not held for the whole flight",
       "detail": "RTK Fixed (cm-level vs. base) for 76% of the airborne time; the rest was RTK Float 24% (~0.2\u20131 m vs. base); DGPS/SBAS 1% (~0.5\u20132 m). Positions in those stretches are less accurate; the GPS panel shows when."
-    },
-    {
-      "level": "warn",
-      "title": "High compass variance",
-      "detail": "The EKF compass variance (how far the magnetometer disagrees with the heading the EKF expects; 0 = perfect agreement, 0.8 = ArduPilot's EKF failsafe threshold, flagged here from 0.5) peaks at 0.98 at 291.4 s, in flight. In flight: median 0.15; above 0.5 for 3% and above 0.8 for <1% of the airborne time."
     },
     {
       "level": "warn",

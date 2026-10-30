@@ -111,17 +111,16 @@ def stat_tiles(meta: dict, wind: pd.DataFrame | None,
     test = sm.get("test") or {}
     if test.get("desired_speeds_m_s"):
         sp = test["desired_speeds_m_s"]
-        tiles.append(("Desired speed" + ("s" if len(sp) > 1 else ""),
-                      _and(sp) + " m/s",
-                      f"commanded, at {test['commanded_alt_m']:g} m altitude" if test.get("commanded_alt_m")
-                      else "commanded"))
+        tiles.append(("Desired speed" + ("s" if len(sp) > 1 else ""), _and(sp) + " m/s", "commanded"))
     elif sm.get("held_speeds_m_s"):
         sp = sm["held_speeds_m_s"]
         tiles.append(("Speed" + ("s" if len(sp) > 1 else ""), "≈" + _and(sp) + " m/s",
                       "held in flight (groundspeed); the desired speed is not in this log"))
+    batt = f"{test['battery_mah']} mAh battery" if test.get("battery_mah") else ""
     if "payload_g" in test:
-        tiles.append(("Payload", f"{test['payload_g']:g} g" if test["payload_g"] else "none",
-                      f"{test['battery_mah']} mAh battery" if test.get("battery_mah") else "from the log header"))
+        tiles.append(("Payload", f"{test['payload_g']:g} g" if test["payload_g"] else "none", batt or "from the log header"))
+    else:
+        tiles.append(("Payload", "not recorded", batt or "not in the log header"))
     dur: dict[str, float] = {}
     for a, b, m in sm["modes"]:
         if m != "—":
@@ -165,10 +164,6 @@ def stat_tiles(meta: dict, wind: pd.DataFrame | None,
     elif meta.get("wind"):
         tiles.append(("Wind (wind drone)", "none", "no wind-drone log covers this flight"))
     if hwas is not None and len(hwas):
-        d = circmean(hwas["wind_dir_deg"])
-        gust = hwas["gust_m_s"].max()
-        tiles.append(("Wind (HWAS)", f"{hwas['wind_speed_m_s'].mean():.1f} m/s mean",
-                      (f"gusts to {gust:.1f} m/s, " if gust > 0 else "") + f"from ≈{d:.0f}° ({compass(d)})"))
         tiles.append(("Air (HWAS)", f"{hwas['temperature_c'].mean():.1f} °C",
                       f"{hwas['humidity_pct'].mean():.0f}% humidity"))
     return tiles

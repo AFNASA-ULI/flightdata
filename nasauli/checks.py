@@ -7,13 +7,14 @@ import re
 import numpy as np
 import pandas as pd
 
+from . import campaign
 from .annotations import for_flight
 from .clean import Session, airborne, armed_or_unknown
 from .localtime import fmt
 from .schema import FLIGHT_COLUMNS, GPS_FIX_TYPES
 
-COMPASS_VAR_WARN = 0.5  # flagged here from 0.5 ...
-EKF_FS_THRESH = 0.8  # ... ArduPilot's EKF failsafe (FS_EKF_THRESH default) acts at 0.8
+EKF_FS_THRESH = 0.8  # ArduPilot's EKF failsafe threshold (FS_EKF_THRESH default)
+EKF_FS_HOLD_S = 1.0  # ... held for about a second before the failsafe acts
 VIBE_WARN = 30.0  # m/s^2, ArduPilot's guidance for "too high"
 
 
@@ -97,7 +98,68 @@ def summarize(s: Session) -> dict:
             out["gps"]["home_msl_source"] = full["home_msl_source"] + " (whole log)"
         out["starts_airborne"] = bool(air.iloc[0]) if len(air) else False
     out["test"] = test_conditions(s.info["header"], for_flight(s.flight_id))
+    if cruise.any() and not out["dry_run"]:
+        speeds = out["test"].get("desired_speeds_m_s") or out.get("held_speeds_m_s") or []
+        out["legs"] = speed_legs(df, cruise, speeds, s.wind, s.hwas)
     return out
+
+
+def _runs(t: np.ndarray, gap_s: float = 1.0) -> list[tuple[float, float]]:
+    """Contiguous stretches of sample times (a gap longer than ``gap_s`` starts a new one)."""
+    if not len(t):
+        return []
+    cut = np.flatnonzero(np.diff(t) > gap_s)
+    starts = np.r_[0, cut + 1]
+    ends = np.r_[cut, len(t) - 1]
+    return [(float(t[a]), float(t[b])) for a, b in zip(starts, ends)]
+
+
+def speed_legs(df: pd.DataFrame, cruise: pd.Series, speeds: list, wind, hwas) -> list[dict]:
+    """Split the cruise into legs of one speed and one matrix altitude (campaign.py), with the wind during each.
+
+    A sample belongs to the commanded (or held) speed its groundspeed is closest to, within SPEED_TOL, and to the
+    matrix altitude within ALT_TOL_M of its height above takeoff. Legs shorter than MIN_LEG_S in total are dropped.
+    """
+    if not speeds:
+        return []
+    dt = float(np.median(np.diff(df["elapsed_s"]))) if len(df) > 1 else 0.05
+    c = df[cruise]
+    sp = np.asarray(sorted(speeds), dtype=float)
+    gs = c["groundspeed_m_s"].to_numpy(dtype=float)
+    k = np.abs(gs[:, None] - sp[None, :]).argmin(axis=1)
+    v = sp[k]
+    ok_v = np.abs(gs - v) <= np.maximum(1.5, campaign.SPEED_TOL * v)
+    alts = np.asarray(campaign.ALTITUDES_M, dtype=float)
+    h = c["alt_rel_m"].to_numpy(dtype=float)
+    ka = np.abs(h[:, None] - alts[None, :]).argmin(axis=1)
+    a = alts[ka]
+    ok_a = np.abs(h - a) <= campaign.ALT_TOL_M
+    t = c["elapsed_s"].to_numpy(dtype=float)
+    legs = []
+    for speed in sp:
+        for alt in alts:
+            m = ok_v & ok_a & (v == speed) & (a == alt)
+            if m.sum() * dt < campaign.MIN_LEG_S:
+                continue
+            runs = _runs(t[m])
+            leg = {"speed_m_s": _num(speed), "alt_m": _num(alt), "duration_s": _r(m.sum() * dt, 0),
+                   "alt_median_m": _r(float(np.median(h[m]))), "gs_median_m_s": _r(float(np.median(gs[m])), 1),
+                   "start_s": _r(t[m].min()), "end_s": _r(t[m].max())}
+            for name, table, margin in (("wind_drone_m_s", wind, 0.0), ("hwas_m_s", hwas, 30.0)):
+                if table is None or not len(table):
+                    continue
+                we = table["elapsed_s"].to_numpy(dtype=float)
+                inside = np.zeros(len(we), dtype=bool)
+                for r0, r1 in runs:
+                    inside |= (we >= r0 - margin) & (we <= r1 + margin)
+                if inside.any():
+                    leg[name] = _r(float(table["wind_speed_m_s"].to_numpy(dtype=float)[inside].mean()), 1)
+            legs.append(leg)
+    return legs
+
+
+def _num(x: float):
+    return int(x) if float(x).is_integer() else float(x)
 
 
 def _numbers(text: str) -> list[float]:
@@ -126,7 +188,9 @@ def test_conditions(header: dict, note: dict) -> dict:
             out["payload_g"] = round(float(val) * (1000 if unit.lower() == "kg" else 1), 1)
             out["payload_g"] = int(out["payload_g"]) if float(out["payload_g"]).is_integer() else out["payload_g"]
     m = re.search(r"(\d+)\s*mah\s*battery", notes, re.I)
-    if m:
+    if "battery_mah" in note:
+        out["battery_mah"] = note["battery_mah"]
+    elif m:
         out["battery_mah"] = int(m.group(1))
     if notes:
         out["notes"] = notes
@@ -175,6 +239,16 @@ def height_check(df: pd.DataFrame, air: pd.Series) -> dict:
             out["home_msl_m"] = round(float((both["alt_msl_m"] - both["alt_rel_m"]).median()), 2)
             out["home_msl_source"] = "EKF (approximate)"
     return out
+
+
+def _longest_run_s(t: pd.Series, mask: pd.Series) -> float:
+    """Longest stretch of time (s) over which ``mask`` stays true."""
+    m = mask.fillna(False).to_numpy(dtype=bool)
+    if not m.any():
+        return 0.0
+    tt = t.to_numpy(dtype=float)
+    edges = np.flatnonzero(np.diff(np.r_[0, m.astype(int), 0]))
+    return float(max(tt[min(b, len(tt) - 1)] - tt[a] for a, b in zip(edges[::2], edges[1::2])))
 
 
 def run_checks(s: Session, summary: dict) -> list[dict]:
@@ -318,41 +392,28 @@ def run_checks(s: Session, summary: dict) -> list[dict]:
             "the fix is RTK Fixed.")
 
     # --- EKF / vibration / GPS
-    cvar = df["ekf_compass_var"]
-    cv = cvar.max()
-    if pd.notna(cv) and cv >= COMPASS_VAR_WARN:
-        i = cvar.idxmax()
-        t = df.at[i, "elapsed_s"]
-        if air.at[i]:
-            where = "in flight"
-        elif summary.get("takeoff_s") is not None and t < summary["takeoff_s"]:
-            where = "on the ground before takeoff"
-        elif summary.get("landing_s") is not None and t > summary["landing_s"]:
-            where = "on the ground after landing"
-        else:
-            where = "on the ground"
+    # Shown only when the in-flight variance stays at or above ArduPilot's EKF failsafe threshold for at least
+    # EKF_FS_HOLD_S (the failsafe acts on a value held for about a second, not on single spikes). Spikes on the
+    # ground (motors spinning up at the takeoff spot) and lower or brief in-flight values are left out.
+    in_air = df.loc[air, "ekf_compass_var"].dropna()
+    longest = _longest_run_s(df["elapsed_s"], air & (df["ekf_compass_var"] >= EKF_FS_THRESH))
+    if longest >= EKF_FS_HOLD_S:
+        i = in_air.idxmax()
+        used = in_air[in_air > 0]
+
+        def pct(n):
+            p = 100 * n / len(in_air)
+            return "<1%" if 0 < p < 0.5 else f"{p:.0f}%"
         detail = (f"The EKF compass variance (how far the magnetometer disagrees with the heading the EKF "
-                  f"expects; 0 = perfect agreement, {EKF_FS_THRESH:g} = ArduPilot's EKF failsafe threshold, "
-                  f"flagged here from {COMPASS_VAR_WARN:g}) peaks at {cv:.2f} at {t:.1f} s, {where}.")
-        in_air = cvar[air].dropna()
-        if len(in_air):
-            used = in_air[in_air > 0]
-            zero = 100 * (in_air == 0).mean()
-            if len(used):
-                def pct(n):
-                    p = 100 * n / len(in_air)
-                    return "<1%" if 0 < p < 0.5 else f"{p:.0f}%"
-                detail += (f" In flight: median {used.median():.2f}; above {COMPASS_VAR_WARN:g} for "
-                           f"{pct((used >= COMPASS_VAR_WARN).sum())} and above {EKF_FS_THRESH:g} for "
-                           f"{pct((used >= EKF_FS_THRESH).sum())} of the airborne time.")
-            if zero >= 50:
-                detail += (f" It is exactly 0 for {zero:.0f}% of the flight, which usually means the EKF "
-                           "was not using the compass then.")
-            if in_air.max() < COMPASS_VAR_WARN:
-                detail += " Only the ground readings reach it (motors running close to the ground)."
-        add("warn" if len(in_air) and in_air.max() >= COMPASS_VAR_WARN else "info",
-            "High compass variance" if not len(in_air) or in_air.max() >= COMPASS_VAR_WARN
-            else "Compass variance high on the ground only", detail)
+                  f"expects; 0 = perfect agreement) reaches {in_air.max():.2f} in flight at "
+                  f"{df.at[i, 'elapsed_s']:.1f} s; ArduPilot's EKF failsafe threshold is {EKF_FS_THRESH:g}. "
+                  f"In flight: median {used.median():.2f}, above {EKF_FS_THRESH:g} for "
+                  f"{pct((in_air >= EKF_FS_THRESH).sum())} of the airborne time, at most {longest:.1f} s at a time.")
+        zero = 100 * (in_air == 0).mean()
+        if zero >= 50:
+            detail += (f" It is exactly 0 for {zero:.0f}% of the flight, which usually means the EKF was not "
+                       "using the compass then.")
+        add("warn", "High compass variance", detail)
     vmax = df[["vib_x_m_s2", "vib_y_m_s2", "vib_z_m_s2"]].max().max()
     if pd.notna(vmax) and vmax >= VIBE_WARN:
         add("warn", "High vibration", f"Peak vibration is {vmax:.1f} m/s² (guidance: keep below {VIBE_WARN:.0f}).")

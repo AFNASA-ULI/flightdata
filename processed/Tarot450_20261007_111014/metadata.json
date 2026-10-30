@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.10.0",
+  "pipeline_version": "1.11.0",
   "flight_id": "Tarot450_20261007_111014",
   "dry_run": false,
   "platform": {
@@ -108,13 +108,35 @@
         14
       ],
       "commanded_alt_m": 50
-    }
+    },
+    "legs": [
+      {
+        "speed_m_s": 11,
+        "alt_m": 50,
+        "duration_s": 56.0,
+        "alt_median_m": 50.0,
+        "gs_median_m_s": 10.9,
+        "start_s": 50.3,
+        "end_s": 201.8,
+        "wind_drone_m_s": 4.6
+      },
+      {
+        "speed_m_s": 14,
+        "alt_m": 50,
+        "duration_s": 31.0,
+        "alt_median_m": 50.2,
+        "gs_median_m_s": 13.9,
+        "start_s": 138.0,
+        "end_s": 200.4,
+        "wind_drone_m_s": 5.6
+      }
+    ]
   },
   "checks": [
     {
       "level": "warn",
       "title": "High compass variance",
-      "detail": "The EKF compass variance (how far the magnetometer disagrees with the heading the EKF expects; 0 = perfect agreement, 0.8 = ArduPilot's EKF failsafe threshold, flagged here from 0.5) peaks at 1.60 at 9.8 s, on the ground before takeoff. In flight: median 0.33; above 0.5 for 33% and above 0.8 for 5% of the airborne time."
+      "detail": "The EKF compass variance (how far the magnetometer disagrees with the heading the EKF expects; 0 = perfect agreement) reaches 1.24 in flight at 46.3 s; ArduPilot's EKF failsafe threshold is 0.8. In flight: median 0.33, above 0.8 for 5% of the airborne time, at most 3.7 s at a time."
     },
     {
       "level": "info",

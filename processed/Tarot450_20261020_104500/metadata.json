@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.10.0",
+  "pipeline_version": "1.11.0",
   "flight_id": "Tarot450_20261020_104500",
   "dry_run": false,
   "platform": {
@@ -128,8 +128,55 @@
       ],
       "commanded_alt_m": 75,
       "payload_g": 360,
+      "battery_mah": 5500,
       "notes": "360g payload (2 wieghts)"
-    }
+    },
+    "legs": [
+      {
+        "speed_m_s": 5,
+        "alt_m": 75,
+        "duration_s": 157.0,
+        "alt_median_m": 75.0,
+        "gs_median_m_s": 5.0,
+        "start_s": 44.0,
+        "end_s": 446.1,
+        "wind_drone_m_s": 2.7,
+        "hwas_m_s": 1.5
+      },
+      {
+        "speed_m_s": 8,
+        "alt_m": 75,
+        "duration_s": 89.0,
+        "alt_median_m": 75.0,
+        "gs_median_m_s": 8.0,
+        "start_s": 206.9,
+        "end_s": 430.4,
+        "wind_drone_m_s": 2.8,
+        "hwas_m_s": 1.4
+      },
+      {
+        "speed_m_s": 11,
+        "alt_m": 75,
+        "duration_s": 57.0,
+        "alt_median_m": 75.0,
+        "gs_median_m_s": 10.9,
+        "start_s": 311.8,
+        "end_s": 429.2,
+        "wind_drone_m_s": 2.7,
+        "hwas_m_s": 1.3
+      },
+      {
+        "speed_m_s": 14,
+        "alt_m": 75,
+        "duration_s": 29.0,
+        "alt_median_m": 75.1,
+        "gs_median_m_s": 13.9,
+        "start_s": 381.7,
+        "end_s": 427.9,
+        "wind_drone_m_s": 3.1,
+        "hwas_m_s": 1.3
+      }
+    ]
   },
   "checks": [
     {
@@ -140,7 +187,7 @@
     {
       "level": "warn",
       "title": "High compass variance",
-      "detail": "The EKF compass variance (how far the magnetometer disagrees with the heading the EKF expects; 0 = perfect agreement, 0.8 = ArduPilot's EKF failsafe threshold, flagged here from 0.5) peaks at 1.68 at 12.7 s, on the ground before takeoff. In flight: median 0.24; above 0.5 for 16% and above 0.8 for 6% of the airborne time."
+      "detail": "The EKF compass variance (how far the magnetometer disagrees with the heading the EKF expects; 0 = perfect agreement) reaches 1.61 in flight at 374.2 s; ArduPilot's EKF failsafe threshold is 0.8. In flight: median 0.24, above 0.8 for 6% of the airborne time, at most 7.5 s at a time."
     },
     {
       "level": "info",
