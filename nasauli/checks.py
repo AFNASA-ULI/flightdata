@@ -12,7 +12,8 @@ from .clean import Session, airborne, armed_or_unknown
 from .localtime import fmt
 from .schema import FLIGHT_COLUMNS, GPS_FIX_TYPES
 
-COMPASS_VAR_WARN = 0.5  # ArduPilot's default EKF failsafe threshold is 0.8
+COMPASS_VAR_WARN = 0.5  # flagged here from 0.5 ...
+EKF_FS_THRESH = 0.8  # ... ArduPilot's EKF failsafe (FS_EKF_THRESH default) acts at 0.8
 VIBE_WARN = 30.0  # m/s^2, ArduPilot's guidance for "too high"
 
 
@@ -62,7 +63,13 @@ def summarize(s: Session) -> dict:
 
     auto = df["flight_mode"].eq("AUTO")
     cruise = air & auto & (df["groundspeed_m_s"] > 2)
+    if not auto.any():  # no flight mode in the log (v1): use the whole airborne time
+        cruise = air & (df["groundspeed_m_s"] > 2)
     if cruise.any():
+        # Speeds the drone held (rounded to 1 m/s, each for at least 15% of the cruise): shown when the log
+        # does not record the commanded speeds.
+        held = df.loc[cruise, "groundspeed_m_s"].round(0).value_counts(normalize=True)
+        out["held_speeds_m_s"] = sorted(int(v) for v, share in held.items() if share >= 0.15)
         out["cruise_alt_m"] = _r(df.loc[cruise, "alt_rel_m"].median())
         out["cruise_speed_m_s"] = _r(df.loc[cruise, "groundspeed_m_s"].median())
         out["cruise_current_a"] = _r(df.loc[cruise, "batt_current_a"].median())
@@ -311,11 +318,41 @@ def run_checks(s: Session, summary: dict) -> list[dict]:
             "the fix is RTK Fixed.")
 
     # --- EKF / vibration / GPS
-    cv = df["ekf_compass_var"].max()
+    cvar = df["ekf_compass_var"]
+    cv = cvar.max()
     if pd.notna(cv) and cv >= COMPASS_VAR_WARN:
-        t = df.loc[df["ekf_compass_var"].idxmax(), "elapsed_s"]
-        add("warn", "High compass variance",
-            f"EKF compass variance peaks at {cv:.2f} (t = {t:.1f} s). ArduPilot's default failsafe threshold is 0.8.")
+        i = cvar.idxmax()
+        t = df.at[i, "elapsed_s"]
+        if air.at[i]:
+            where = "in flight"
+        elif summary.get("takeoff_s") is not None and t < summary["takeoff_s"]:
+            where = "on the ground before takeoff"
+        elif summary.get("landing_s") is not None and t > summary["landing_s"]:
+            where = "on the ground after landing"
+        else:
+            where = "on the ground"
+        detail = (f"The EKF compass variance (how far the magnetometer disagrees with the heading the EKF "
+                  f"expects; 0 = perfect agreement, {EKF_FS_THRESH:g} = ArduPilot's EKF failsafe threshold, "
+                  f"flagged here from {COMPASS_VAR_WARN:g}) peaks at {cv:.2f} at {t:.1f} s, {where}.")
+        in_air = cvar[air].dropna()
+        if len(in_air):
+            used = in_air[in_air > 0]
+            zero = 100 * (in_air == 0).mean()
+            if len(used):
+                def pct(n):
+                    p = 100 * n / len(in_air)
+                    return "<1%" if 0 < p < 0.5 else f"{p:.0f}%"
+                detail += (f" In flight: median {used.median():.2f}; above {COMPASS_VAR_WARN:g} for "
+                           f"{pct((used >= COMPASS_VAR_WARN).sum())} and above {EKF_FS_THRESH:g} for "
+                           f"{pct((used >= EKF_FS_THRESH).sum())} of the airborne time.")
+            if zero >= 50:
+                detail += (f" It is exactly 0 for {zero:.0f}% of the flight, which usually means the EKF "
+                           "was not using the compass then.")
+            if in_air.max() < COMPASS_VAR_WARN:
+                detail += " Only the ground readings reach it (motors running close to the ground)."
+        add("warn" if len(in_air) and in_air.max() >= COMPASS_VAR_WARN else "info",
+            "High compass variance" if not len(in_air) or in_air.max() >= COMPASS_VAR_WARN
+            else "Compass variance high on the ground only", detail)
     vmax = df[["vib_x_m_s2", "vib_y_m_s2", "vib_z_m_s2"]].max().max()
     if pd.notna(vmax) and vmax >= VIBE_WARN:
         add("warn", "High vibration", f"Peak vibration is {vmax:.1f} m/s² (guidance: keep below {VIBE_WARN:.0f}).")

@@ -71,6 +71,12 @@ There is no test suite; validate a change by running `process` on all flights an
   are averaged per 50 ms step, slower ones interpolated (states held). Time is the onboard computer's bag time
   (not GPS-checked); no armed state or flight mode; batt_temp_c is the mean of the TMP119 sensors (each kept
   as battN_tempM_c); motors are motorN_us for every channel that is not always 0.
+- Autopilot (Cube) logs: commanded speeds/altitude come from the uploaded mission (CMD: DO_CHANGE_SPEED param 2,
+  waypoint Alt with frame 3) and go into the header as commanded_speed_ms / commanded_altitude_m. Logs with no
+  commanded speed (25 Sep, 8 Apr) show the speeds held in flight ("Speed ≈… m/s", groundspeed plateaus ≥15% of the
+  cruise), labeled as not the desired speed. The Cruise box shows altitude only.
+- Compass-variance check: flagged from 0.5, ArduPilot's EKF failsafe is 0.8; the note says where the peak is
+  (in flight / on the ground), the in-flight share above each, and when the variance is exactly 0 (compass unused).
 - Desired speeds come from the header's `commanded_speed_ms`, payload from `notes` ("360g payload", "no payload");
   `annotations.py` overrides them and trims parts of a log the team says are not part of the test. A trim keeps
   the flight ID (from the raw log start) and the home/RTK elevation from the whole log; elapsed_s stays as in

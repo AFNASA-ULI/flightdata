@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.9.0",
+  "pipeline_version": "1.10.0",
   "flight_id": "Tarot450_20260408_105711",
   "dry_run": false,
   "platform": {
@@ -50,6 +50,12 @@
     "landed_in_log": true,
     "max_alt_rel_m": 16.3,
     "max_range_m": 356.0,
+    "held_speeds_m_s": [
+      10
+    ],
+    "cruise_alt_m": 15.1,
+    "cruise_speed_m_s": 9.9,
+    "cruise_current_a": 10.1,
     "mission_items": 0,
     "rtl_s": null,
     "batt_consumed_mah": 375.0,
