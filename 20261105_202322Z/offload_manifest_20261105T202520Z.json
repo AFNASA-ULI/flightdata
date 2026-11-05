@@ -1,0 +1,53 @@
+{
+  "downloaded_utc": "2026-11-05T20:23:22.621654+00:00",
+  "source_host": "192.168.50.1",
+  "source_dir": "~/cubelink/pizero2/logs",
+  "files": [
+    {
+      "name": "TAROT_450_20261105T182821Z.meta.json",
+      "remote_path": "/home/pi/cubelink/pizero2/logs/TAROT_450_20261105T182821Z.meta.json",
+      "local_path": "/home/robie/Documents/NasaULI-Flight-Data/20261105_202322Z/TAROT_450_20261105T182821Z.meta.json",
+      "remote_size": 11551,
+      "local_size": 11551,
+      "size_match": true,
+      "remote_sha256": "6cc76ef8d5a8e559fa0dca258abd263c4fe064833e50cb9956fb615ba7a504d9",
+      "local_sha256": "6cc76ef8d5a8e559fa0dca258abd263c4fe064833e50cb9956fb615ba7a504d9",
+      "checksum_match": true
+    },
+    {
+      "name": "TAROT_450_20261105T182821Z.csv",
+      "remote_path": "/home/pi/cubelink/pizero2/logs/TAROT_450_20261105T182821Z.csv",
+      "local_path": "/home/robie/Documents/NasaULI-Flight-Data/20261105_202322Z/TAROT_450_20261105T182821Z.csv",
+      "remote_size": 131699166,
+      "local_size": 131699166,
+      "size_match": true,
+      "remote_sha256": "e74fd50daa0b8c1db054a980d16e9e1d8bd90a1dd4a980749e24320b1ffb39bb",
+      "local_sha256": "e74fd50daa0b8c1db054a980d16e9e1d8bd90a1dd4a980749e24320b1ffb39bb",
+      "checksum_match": true
+    },
+    {
+      "name": "TAROT_450_20261105T182821Z.console.log",
+      "remote_path": "/home/pi/cubelink/pizero2/logs/TAROT_450_20261105T182821Z.console.log",
+      "local_path": "/home/robie/Documents/NasaULI-Flight-Data/20261105_202322Z/TAROT_450_20261105T182821Z.console.log",
+      "remote_size": 44918,
+      "local_size": 44918,
+      "size_match": true,
+      "remote_sha256": "0f769ef2f7e9bc93e56ebf5854851b37890b3def7b132a15f20c60993b0e0789",
+      "local_sha256": "0f769ef2f7e9bc93e56ebf5854851b37890b3def7b132a15f20c60993b0e0789",
+      "checksum_match": true
+    },
+    {
+      "name": "TAROT_450_20261105T182821Z.events.log",
+      "remote_path": "/home/pi/cubelink/pizero2/logs/TAROT_450_20261105T182821Z.events.log",
+      "local_path": "/home/robie/Documents/NasaULI-Flight-Data/20261105_202322Z/TAROT_450_20261105T182821Z.events.log",
+      "remote_size": 1569,
+      "local_size": 1569,
+      "size_match": true,
+      "remote_sha256": "8fe22c594281d2fa26eda154d9accbce5bb639c0f4af10ace09b4cc830c31577",
+      "local_sha256": "8fe22c594281d2fa26eda154d9accbce5bb639c0f4af10ace09b4cc830c31577",
+      "checksum_match": true
+    }
+  ],
+  "failures": [],
+  "verified": true
+}
