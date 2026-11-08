@@ -74,11 +74,11 @@ There is no test suite; validate a change by running `process` on all flights an
 - Autopilot (Cube) logs: commanded speeds/altitude come from the uploaded mission (CMD: DO_CHANGE_SPEED param 2,
   waypoint Alt with frame 3) and go into the header as commanded_speed_ms / commanded_altitude_m. Logs with no
   commanded speed (25 Sep, 8 Apr) show the speeds held in flight ("Speed ≈… m/s", groundspeed plateaus ≥15% of the
-  cruise), labeled as not the desired speed. The Cruise box shows altitude only.
+  cruise or ≥30 s), labeled as not the desired speed. The Cruise box shows altitude only.
 - Compass-variance warning only when the in-flight variance stays >= 0.8 (ArduPilot's EKF failsafe) for >= 1 s;
   ground spikes and brief/lower values are not shown. Notes when it is exactly 0 (compass unused).
 - Top boxes: desired speeds (no altitude), payload on every flight, always in grams ("0 g", never "none"; no payload recorded = 0 g,
-  `test.payload_assumed`; battery from notes or annotations), no HWAS wind box. 20 Oct flights: 5500 mAh (annotation).
+  `test.payload_assumed`; battery from notes or annotations), no HWAS wind box. 20 Oct flights: 5500 mAh (annotation). 5 Nov 10:22, 10:53, 11:15: speeds 5/8/11/14 (annotation).
 - Data-collection status (`nasauli/campaign.py`, `nasauli/coverage.py`): per drone, two 3x4 tables
   (altitudes 25/50/75 m x speeds 5/8/11/14 m/s), cells colored by payloads flown (0/180/360 g: 3 blue, 2 green,
   1 yellow-green, none white). Flights are split into legs (`checks.speed_legs`: one speed + one matrix altitude,

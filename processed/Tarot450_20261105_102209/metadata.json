@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.11.1",
+  "pipeline_version": "1.11.2",
   "flight_id": "Tarot450_20261105_102209",
   "dry_run": false,
   "platform": {
@@ -103,7 +103,9 @@
     "max_range_m": 357.0,
     "held_speeds_m_s": [
       5,
-      8
+      8,
+      11,
+      14
     ],
     "cruise_alt_m": 75.0,
     "cruise_speed_m_s": 7.3,
@@ -135,6 +137,12 @@
       }
     },
     "test": {
+      "desired_speeds_m_s": [
+        5,
+        8,
+        11,
+        14
+      ],
       "payload_g": 0,
       "payload_assumed": true
     },
@@ -160,6 +168,28 @@
         "end_s": 521.4,
         "wind_drone_m_s": 3.6,
         "hwas_m_s": 2.7
+      },
+      {
+        "speed_m_s": 11,
+        "alt_m": 75,
+        "duration_s": 73.0,
+        "alt_median_m": 75.0,
+        "gs_median_m_s": 10.9,
+        "start_s": 372.1,
+        "end_s": 520.2,
+        "wind_drone_m_s": 3.4,
+        "hwas_m_s": 2.4
+      },
+      {
+        "speed_m_s": 14,
+        "alt_m": 75,
+        "duration_s": 42.0,
+        "alt_median_m": 75.1,
+        "gs_median_m_s": 13.9,
+        "start_s": 458.0,
+        "end_s": 519.0,
+        "wind_drone_m_s": 2.4,
+        "hwas_m_s": 2.3
       }
     ]
   },

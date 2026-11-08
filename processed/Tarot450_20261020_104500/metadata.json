@@ -1,5 +1,5 @@
 {
-  "pipeline_version": "1.11.1",
+  "pipeline_version": "1.11.2",
   "flight_id": "Tarot450_20261020_104500",
   "dry_run": false,
   "platform": {
@@ -88,7 +88,8 @@
     "max_range_m": 303.0,
     "held_speeds_m_s": [
       5,
-      8
+      8,
+      11
     ],
     "cruise_alt_m": 75.0,
     "cruise_speed_m_s": 6.6,

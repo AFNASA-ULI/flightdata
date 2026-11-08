@@ -16,6 +16,9 @@ ANNOTATIONS: dict[str, dict] = {
     "Tarot450_20261009_102747": {"desired_speeds_m_s": [11, 14], "payload_g": 360},
     "Tarot450_20261020_104500": {"battery_mah": 5500},
     "Tarot450_20261020_105920": {"battery_mah": 5500},
+    "Tarot450_20261105_102209": {"desired_speeds_m_s": [5, 8, 11, 14]},
+    "Tarot450_20261105_105321": {"desired_speeds_m_s": [5, 8, 11, 14]},
+    "Tarot450_20261105_111512": {"desired_speeds_m_s": [5, 8, 11, 14]},
 }
 
 

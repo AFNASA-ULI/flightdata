@@ -67,10 +67,12 @@ def summarize(s: Session) -> dict:
     if not auto.any():  # no flight mode in the log (v1): use the whole airborne time
         cruise = air & (df["groundspeed_m_s"] > 2)
     if cruise.any():
-        # Speeds the drone held (rounded to 1 m/s, each for at least 15% of the cruise): shown when the log
-        # does not record the commanded speeds.
-        held = df.loc[cruise, "groundspeed_m_s"].round(0).value_counts(normalize=True)
-        out["held_speeds_m_s"] = sorted(int(v) for v, share in held.items() if share >= 0.15)
+        # Speeds the drone held (rounded to 1 m/s, each for at least 15% of the cruise or 30 s): shown when
+        # the log does not record the commanded speeds.
+        counts = df.loc[cruise, "groundspeed_m_s"].round(0).value_counts()
+        step = float(np.median(np.diff(df["elapsed_s"]))) if len(df) > 1 else 0.05
+        out["held_speeds_m_s"] = sorted(int(v) for v, n in counts.items()
+                                        if n / counts.sum() >= 0.15 or n * step >= 30)
         out["cruise_alt_m"] = _r(df.loc[cruise, "alt_rel_m"].median())
         out["cruise_speed_m_s"] = _r(df.loc[cruise, "groundspeed_m_s"].median())
         out["cruise_current_a"] = _r(df.loc[cruise, "batt_current_a"].median())
