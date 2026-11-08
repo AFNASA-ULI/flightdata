@@ -292,6 +292,24 @@
         "rows": 6865,
         "bag_closed": true,
         "unique_rows": 6865
+      },
+      {
+        "name": "wind_drone_20261028_102644_csv",
+        "kind": "csv",
+        "start_utc": "2026-10-28T16:26:47.545536303+00:00",
+        "end_utc": "2026-10-28T16:55:13.339775752+00:00",
+        "rows": 8530,
+        "bag_closed": false,
+        "unique_rows": 8530
+      },
+      {
+        "name": "wind_drone_20261105_100126_csv",
+        "kind": "csv",
+        "start_utc": "2026-11-05T17:01:28.746736092+00:00",
+        "end_utc": "2026-11-05T18:37:52.927399394+00:00",
+        "rows": 28839,
+        "bag_closed": true,
+        "unique_rows": 28839
       }
     ]
   },
