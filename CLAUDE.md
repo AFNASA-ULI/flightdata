@@ -74,7 +74,8 @@ There is no test suite; validate a change by running `process` on all flights an
 - Autopilot (Cube) logs: commanded speeds/altitude come from the uploaded mission (CMD: DO_CHANGE_SPEED param 2,
   waypoint Alt with frame 3) and go into the header as commanded_speed_ms / commanded_altitude_m. Logs with no
   commanded speed (25 Sep, 8 Apr) show the speeds held in flight ("Speed ≈… m/s", groundspeed plateaus ≥15% of the
-  cruise or ≥30 s), labeled as not the desired speed. The Cruise box shows altitude only.
+  cruise or ≥30 s), labeled as not the desired speed. Altitude is the target altitude in whole meters (`report.target_alt`: matrix altitude of the longest legs, else
+  commanded, else cruise), shown as the Altitude box and the flight tables' Altitude column (no max altitude).
 - Compass-variance warning only when the in-flight variance stays >= 0.8 (ArduPilot's EKF failsafe) for >= 1 s;
   ground spikes and brief/lower values are not shown. Notes when it is exactly 0 (compass unused).
 - Top boxes: desired speeds (no altitude), payload on every flight, always in grams ("0 g", never "none"; no payload recorded = 0 g,

@@ -15,6 +15,7 @@ import re
 import numpy as np
 import pandas as pd
 
+from . import campaign
 from .localtime import fmt, to_local
 
 MAX_PLOT_HZ = 10.0
@@ -93,6 +94,22 @@ def circmean(deg: pd.Series) -> float:
     return float(np.degrees(np.arctan2(np.sin(r).mean(), np.cos(r).mean())) % 360)
 
 
+def target_alt(meta: dict) -> int | None:
+    """The flight's target altitude above takeoff, in whole meters: the matrix altitude (25/50/75 m) of its
+    longest legs, else the commanded altitude in the header, else the cruise altitude."""
+    sm = meta["summary"]
+    by_alt: dict[float, float] = {}
+    for leg in sm.get("legs") or []:
+        by_alt[leg["alt_m"]] = by_alt.get(leg["alt_m"], 0.0) + leg["duration_s"]
+    if by_alt:
+        return int(max(by_alt, key=by_alt.get))
+    alt = (sm.get("test") or {}).get("commanded_alt_m") or sm.get("cruise_alt_m")
+    if alt is None:
+        return None
+    near = min(campaign.ALTITUDES_M, key=lambda a: abs(a - alt))
+    return int(near) if abs(near - alt) <= campaign.ALT_TOL_M else int(round(alt))
+
+
 def stat_tiles(meta: dict, wind: pd.DataFrame | None,
                hwas: pd.DataFrame | None = None) -> list[tuple[str, str, str]]:
     """(label, value, detail) summary tiles, shared by the report and the website's flight pages."""
@@ -128,11 +145,11 @@ def stat_tiles(meta: dict, wind: pd.DataFrame | None,
         main_mode = max(dur, key=dur.get)
         sub = f"RTL from {sm['rtl_s']:.1f} s" if sm.get("rtl_s") is not None else ", ".join(dur)
         tiles.append(("Mission", main_mode + (f", {sm['mission_items']} WPs" if sm.get("mission_items") else ""), sub))
-    if sm.get("cruise_alt_m") is not None:
-        tiles.append(("Cruise altitude", f"{sm['cruise_alt_m']:.0f} m", "above takeoff (median while cruising)"))
+    alt = target_alt(meta)
+    if alt is not None:
+        tiles.append(("Altitude", f"{alt} m", "target, above takeoff"))
     if sm.get("max_range_m") is not None or not meta.get("dry_run"):
-        tiles.append(("Max range", _fmt(sm.get("max_range_m"), " m", 0),
-                      f"from home; max alt {_fmt(sm.get('max_alt_rel_m'), ' m')}"))
+        tiles.append(("Max range", _fmt(sm.get("max_range_m"), " m", 0), "from home"))
     if sm.get("batt_consumed_mah") is not None:
         bsub = f"{_fmt(sm.get('batt_v_start'), ' V')}" + (" in flight" if sm.get("starts_airborne") else "")
         bsub += f" → {_fmt(sm.get('batt_v_end'), ' V')}"

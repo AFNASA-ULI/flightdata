@@ -25,7 +25,7 @@ from .clean import RAW, WIND_DIR, load_hwas_logs, load_wind_logs, raw_logs
 from .pipeline import PROCESSED, load_all_metadata, load_skipped
 from .localtime import LOCAL_LABEL, fmt
 from .platforms import PLATFORMS
-from .report import render, stat_tiles, title_for
+from .report import render, stat_tiles, target_alt, title_for
 from .readers import hwas as hwas_reader
 from .schema import FLIGHT_COLUMNS, HWAS_COLUMNS, RTK_BASE, WIND_COLUMNS
 
@@ -113,7 +113,7 @@ class Book:
         p.write_text(text.strip() + "\n")
 
     def flight_table(self, metas: list[dict], link_prefix: str, drone_col: bool = False) -> str:
-        head = f"| Date ({LOCAL_LABEL}) | " + ("Drone | " if drone_col else "") + "Airborne | Max range | Max alt | Wind data | Warnings |"
+        head = f"| Date ({LOCAL_LABEL}) | " + ("Drone | " if drone_col else "") + "Airborne | Max range | Altitude | Wind data | Warnings |"
         sep = "|---|" + ("---|" if drone_col else "") + "---:|---:|---:|---|---:|"
         rows = [head, sep]
         for m in metas:
@@ -122,7 +122,7 @@ class Book:
                 f"| [{when(m)}]({link_prefix}{page_id(m)}.md){dry(m, ' **dry run**')} | "
                 + (f"{esc(m['platform']['label'])} | " if drone_col else "")
                 + f"{fnum(sm.get('airborne_s'), unit=' s')} | {fnum(sm.get('max_range_m'), unit=' m')} | "
-                f"{fnum(sm.get('max_alt_rel_m'), '{:.1f}', ' m')} | {wind_cell(m)} | {n_warn(m)} |")
+                f"{fnum(target_alt(m), unit=' m')} | {wind_cell(m)} | {n_warn(m)} |")
         return "\n".join(rows)
 
     # ---------------------------------------------------------------- experiments
