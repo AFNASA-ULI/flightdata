@@ -12,8 +12,8 @@
   "reader": "session_v2",
   "source": {
     "file": "raw_data/Tarot450/TAROT_450_20261105T181506Z.csv",
-    "sha256": "591b74fcaeac414eef64c71a4975ad10419cc7c79af6c6fd48a96df9c8236d56",
-    "bytes": 17321867
+    "sha256": "dd89db77973f4d3520af6a7886e00998731cea3e541b537c4c1f82d58eb95a3c",
+    "bytes": 17027093
   },
   "files": [
     "flight.parquet",
@@ -38,13 +38,13 @@
     "factorial_condition": "Alt: 50, all 4 speeds",
     "replicate": "",
     "commanded_altitude_m": "50",
-    "commanded_speed_ms": "",
+    "commanded_speed_ms": "5 8 11 14",
     "adc_enabled": "False",
     "temp_enabled": "True",
     "mavlink_enabled": "True",
     "time_base": "system UTC stepped to autopilot GPS time at start, then disciplined by chrony (ground-station peer)",
     "hostname": "bumblebee",
-    "notes": "180g payload",
+    "notes": "360g payload",
     "chrony_reference_id": "00000000 ()",
     "chrony_stratum": "0",
     "chrony_last_offset_s": "+0.000000000 seconds",
@@ -144,8 +144,8 @@
         14
       ],
       "commanded_alt_m": 50,
-      "payload_g": 180,
-      "notes": "180g payload"
+      "payload_g": 360,
+      "notes": "360g payload"
     },
     "legs": [
       {

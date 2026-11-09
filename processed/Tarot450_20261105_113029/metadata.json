@@ -12,8 +12,8 @@
   "reader": "session_v2",
   "source": {
     "file": "raw_data/Tarot450/TAROT_450_20261105T182821Z_flight_and_mavlink_aftermath.csv",
-    "sha256": "550ddb9beb207ddb0da43eb47f63ec858889158dd2aef8b2d3249dfc3e54cae0",
-    "bytes": 6807788
+    "sha256": "363ab041ca236bcb959a76fc38eec1381d7b0fab0e59024bb4eb789a4fee39dd",
+    "bytes": 6700652
   },
   "files": [
     "flight.parquet",
@@ -44,7 +44,7 @@
     "mavlink_enabled": "True",
     "time_base": "system UTC stepped to autopilot GPS time at start, then disciplined by chrony (ground-station peer)",
     "hostname": "bumblebee",
-    "notes": "180g payload",
+    "notes": "",
     "chrony_reference_id": "00000000 ()",
     "chrony_stratum": "0",
     "chrony_last_offset_s": "+0.000000000 seconds",
@@ -169,8 +169,8 @@
     },
     "test": {
       "commanded_alt_m": 50,
-      "payload_g": 180,
-      "notes": "180g payload"
+      "payload_g": 0,
+      "payload_assumed": true
     },
     "legs": [
       {
