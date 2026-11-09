@@ -12,8 +12,8 @@
   "reader": "session_v2",
   "source": {
     "file": "raw_data/Tarot450/TAROT_450_20261105T172153Z.csv",
-    "sha256": "3dce7a8825a5ae69395a8296351f00bc6777f5d95184693a1999a201b33ed522",
-    "bytes": 18064691
+    "sha256": "9dd8cecf29563335e1ef62e8be17564f58e7fe838ffe7d5fee1201fd7f933e56",
+    "bytes": 17772790
   },
   "files": [
     "flight.parquet",
@@ -37,14 +37,14 @@
     "location": "Athletic Fields",
     "factorial_condition": "",
     "replicate": "",
-    "commanded_altitude_m": "",
-    "commanded_speed_ms": "",
+    "commanded_altitude_m": "75m",
+    "commanded_speed_ms": "5 8 11 14",
     "adc_enabled": "False",
     "temp_enabled": "True",
     "mavlink_enabled": "True",
     "time_base": "system UTC stepped to autopilot GPS time at start, then disciplined by chrony (ground-station peer)",
     "hostname": "bumblebee",
-    "notes": "",
+    "notes": "180g",
     "chrony_reference_id": "00000000 ()",
     "chrony_stratum": "0",
     "chrony_last_offset_s": "+0.000000000 seconds",
@@ -143,8 +143,10 @@
         11,
         14
       ],
+      "commanded_alt_m": 75,
       "payload_g": 0,
-      "payload_assumed": true
+      "payload_assumed": true,
+      "notes": "180g"
     },
     "legs": [
       {
@@ -194,6 +196,11 @@
     ]
   },
   "checks": [
+    {
+      "level": "warn",
+      "title": "Raw file looks re-saved by a spreadsheet program",
+      "detail": "The # header lines end in runs of commas. Excel does both when it re-saves a CSV, and it can also round values. Compare with the original file from the logger."
+    },
     {
       "level": "warn",
       "title": "High compass variance",
