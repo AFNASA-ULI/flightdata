@@ -185,6 +185,8 @@ def test_conditions(header: dict, note: dict) -> dict:
         out["payload_g"] = 0
     else:
         m = re.search(r"(\d+(?:\.\d+)?)\s*(k?g)\b[^,;]*payload|payload[^,;\d]*(\d+(?:\.\d+)?)\s*(k?g)\b", notes, re.I)
+        # A bare weight ("180g", "0.36 kg") in the notes is the payload too.
+        m = m or re.search(r"(?<![\w.])(\d+(?:\.\d+)?)\s*(k?g)\b", notes, re.I)
         if m:
             val, unit = (m.group(1), m.group(2)) if m.group(1) else (m.group(3), m.group(4))
             out["payload_g"] = round(float(val) * (1000 if unit.lower() == "kg" else 1), 1)
